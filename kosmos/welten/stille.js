@@ -69,6 +69,7 @@
   };
   let speaking = null;           // { id, el, lines, at, t0 }
   const speak = (n, el, lines) => {
+    speaking?.lines.forEach(l => { l._ret = 1; typeTo(l, 1); });   // an interrupted letter keeps its whole text, silently
     speaking = { id: "stille-" + n, el, lines, at: LINE_AT[n], t0: performance.now() + 250 };
     kosmos.send({ voice: speaking.id });
   };
@@ -85,7 +86,7 @@
     if (r.bottom < innerHeight * .1 || r.top > innerHeight * .9) {
       // the letter has left the screen: the voice fades, its words stay
       kosmos.send({ voice: null });
-      speaking.lines.forEach(l => typeTo(l, 1));
+      speaking.lines.forEach(l => { l._ret = 1; typeTo(l, 1); });
       speaking = null;
     } else if (t > speaking.at.at(-1)[1] + 4) speaking = null;
   };
@@ -202,20 +203,25 @@
       if (lineClock > 2.2) name.classList.add("on");
     }
 
-    // letters: when you pause, the letter in view begins: dorothea reads it and its lines appear with her voice.
-    // pictures between the letters simply appear
+    // letters: a letter begins once its top has crossed the middle of the screen (into the upper half).
+    // only the letter that crossed last can begin, so two letters never start at the same time; the next one
+    // takes over only when it, in turn, crosses the middle. it starts as soon as the scrolling comes to rest
+    let due = null;
+    for (const b of letters) {
+      const r = b.getBoundingClientRect();
+      if (r.top < innerHeight * .5 && r.bottom > 0) due = b;      // the lowest letter above the middle wins
+    }
+    if (due && speaking?.el !== due && due.querySelector(".s:not(.on)") && idle() > .5)
+      speak(letters.indexOf(due) + 1, due, [...due.querySelectorAll(".s")]);
+    // pictures between the letters simply appear when you pause
     if (still) {
       blockClock += dt;
       if (blockClock > 1) {
         blockClock = 0;
         for (const b of blocks) {
-          if (!inView(b) || speaking?.el === b) continue;
+          if (letters.includes(b) || !inView(b)) continue;
           const next = b.querySelector(".s:not(.on)");
-          if (!next) continue;
-          const n = letters.indexOf(b);
-          if (n >= 0) speak(n + 1, b, [...b.querySelectorAll(".s")]);
-          else next.classList.add("on");
-          break;
+          if (next) { next.classList.add("on"); break; }
         }
       }
     } else blockClock = 0;

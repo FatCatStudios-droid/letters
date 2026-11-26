@@ -346,7 +346,7 @@
     if (current === w) return;
     current = w; here = w.id; worldMix = w.mix; duck = false; level = 1;
     frame.style.transition = "none"; frame.style.opacity = 0;
-    frame.src = `welten/${w.file}.html?v=20261126y`;
+    frame.src = `welten/${w.file}.html?v=20261126z`;
     tabs.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.id === w.id));
     document.title = w.id === "home" ? "letters — eine ahnung von dir" : `letters — ${w.name}`;
     spark("kratzen");
