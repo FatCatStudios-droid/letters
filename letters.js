@@ -223,7 +223,7 @@
     const now = h.c.currentTime;
     g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(VOICE_LEVEL, now + .08);
     s.start(now); me.src = s; me.g = g;
-    frame.contentWindow?.postMessage({ kosmos: 1, voiceStart: id }, "*");
+    frame.contentWindow?.postMessage({ kosmos: 1, voiceStart: id, lat: (h.c.outputLatency || h.c.baseLatency || 0) }, "*");
     s.onended = () => { if (voice === me) { voice = null; duckHeart(false); } };
     duckHeart(true);
   };
@@ -249,7 +249,7 @@
     const h = heartCtx(); h.c.resume();
     const me = { n }; piano = me;
     let buf;
-    try { buf = await (pianoBufs[n] ||= fetch(`audio/piano-${n}.m4a?v=20261128r`).then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b))); }
+    try { buf = await (pianoBufs[n] ||= fetch(`audio/piano-${n}.m4a?v=20261128s`).then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b))); }
     catch { if (piano === me) piano = null; return; }
     if (piano !== me) return;
     const src = h.c.createBufferSource(); src.buffer = buf; src.loop = true;
@@ -401,7 +401,7 @@
     if (current === w && !force && !parked) return;
     current = w; parked = false; here = w.id; worldMix = w.mix; duck = false; level = 1;
     frame.style.transition = "none"; frame.style.opacity = 0;
-    frame.src = `welten/${w.file}.html?v=20261128r`;
+    frame.src = `welten/${w.file}.html?v=20261128s`;
     tabs.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.id === w.id));
     document.title = w.id === "home" ? "letters — eine ahnung von dir" : `letters — ${w.name}`;
     spark("kratzen");

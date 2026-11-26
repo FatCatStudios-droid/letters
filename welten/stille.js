@@ -49,6 +49,24 @@
     [[.18, 2.90], [4.39, 6.60]],                                  // 06
     [[.18, 4.86], [6.22, 9.45]],                                  // 07
   ];
+  // when she really speaks inside each line (measured from the loudness of the recordings, 10 ms steps).
+  // the typewriter only moves while her voice sounds and rests in her pauses, so letters and words land together
+  const SPOKEN = [
+    [[[0.18,0.9],[1.02,1.29],[1.37,2.35]],[[4.36,7.31]],[[9.32,9.68],[9.76,10.17],[10.96,11.69],[12.56,13.92]],[[14.44,15.0],[15.94,16.2],[16.28,17.3]]],   // eröffnung
+    [[[0.18,1.14],[1.62,3.38]],[[3.41,4.25],[4.33,4.85],[4.98,5.34]],[[7.62,7.99],[8.21,9.66],[10.41,11.23]]],   // 01
+    [[[0.18,0.99],[1.65,2.12],[2.2,2.47],[2.56,3.95],[4.05,5.43]],[[6.66,6.95],[7.04,7.4],[9.21,9.39],[9.48,10.16]]],   // 02
+    [[[0.18,0.6],[0.72,1.37]],[[2.4,3.09],[5.13,6.72],[7.35,7.74],[7.88,8.5]]],   // 03
+    [[[0.18,0.91],[1.02,1.48],[2.17,3.27],[3.88,3.92],[4.09,4.46]],[[4.85,6.22]],[[7.98,9.21],[10.38,11.21]]],   // 04
+    [[[0.18,1.29]],[[2.37,2.9],[3.39,3.87],[5.42,6.5],[6.6,7.3]],[[9.31,10.42],[10.73,11.17],[11.31,11.65]],[[13.49,14.25],[16.22,16.89],[17.67,18.27]]],   // 05
+    [[[0.18,0.76],[0.97,1.5],[1.58,2.72]],[[4.39,5.36],[6.15,6.6]]],   // 06
+    [[[0.18,0.68],[1.8,2.58],[3.07,3.65],[3.75,4.6],[4.74,4.86]],[[6.22,8.35],[8.43,9.44]]],   // 07
+  ];
+  // how far a line is typed at time t: the share of its spoken time that has passed
+  const spokenShare = (segs, t) => {
+    let done = 0, all = 0;
+    for (const [s, e] of segs) { all += e - s; done += clamp(t - s, 0, e - s); }
+    return all ? done / all : 1;
+  };
   // typewriter: the typed part shows, the rest keeps its place invisibly (so nothing jumps while it types)
   const typeTo = (l, f) => {
     if (l._full == null) {
@@ -74,18 +92,23 @@
   let speaking = null;           // { id, el, lines, at, t0 }
   const speak = (n, el, lines) => {
     speaking?.lines.forEach(l => { l._ret = 1; typeTo(l, 1); });   // an interrupted letter keeps its whole text, silently
-    speaking = { id: "stille-" + n, el, lines, at: LINE_AT[n], t0: performance.now() + 250 };
+    // the text waits for the voice to really sound (the shell tells us); without sound it begins on its own after a moment
+    speaking = { id: "stille-" + n, el, lines, at: LINE_AT[n], spoken: SPOKEN[n], t0: performance.now() + (kosmos.inside ? 6000 : 250), heard: false };
     kosmos.send({ voice: speaking.id });
   };
   // the shell says when the sound really starts (after loading): the text follows that moment
   addEventListener("message", e => {
     const d = e.data;
-    if (d && d.kosmos && d.voiceStart && speaking && d.voiceStart === speaking.id) speaking.t0 = performance.now();
+    // the moment the sound leaves the speakers: now, plus what the audio device still holds back
+    if (d && d.kosmos && d.voiceStart && speaking && d.voiceStart === speaking.id) { speaking.t0 = performance.now() + 1000 * (+d.lat || 0); speaking.heard = true; }
   });
   const follow = now => {
     if (!speaking) return;
     const t = (now - speaking.t0) / 1000;
-    speaking.lines.forEach((l, i) => { const [a, b] = speaking.at[i] || [0, 1]; if (t >= a) typeTo(l, (t - a) / (b - a)); });
+    speaking.lines.forEach((l, i) => {
+      const [a, b] = speaking.at[i] || [0, 1], segs = speaking.spoken?.[i];
+      if (t >= a) typeTo(l, segs ? spokenShare(segs, t) : (t - a) / (b - a));
+    });
     const r = speaking.el.getBoundingClientRect();
     if (r.bottom < innerHeight * .1 || r.top > innerHeight * .9) {
       // the letter has left the screen: the voice fades, its words stay
