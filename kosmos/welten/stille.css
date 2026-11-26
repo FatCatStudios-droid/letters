@@ -82,7 +82,7 @@ img { display: block; width: 100%; filter: grayscale(1); }
 
 .write { padding: 12vh var(--pad) 16vh; border-top: 1px solid var(--ink); }
 .write .big { font-weight: 500; font-size: clamp(44px, 8vw, 136px); line-height: .9; letter-spacing: -.055em; }
-.write a { display: inline-block; margin-top: 5vh; font-size: clamp(20px, 2.2vw, 36px); letter-spacing: -.02em; }
+.write a { display: inline-block; max-width: 100%; overflow-wrap: anywhere; margin-top: 5vh; font-size: clamp(20px, 2.2vw, 36px); letter-spacing: -.02em; }
 .write a:hover { text-decoration: line-through; }
 
 .foot { display: grid; grid-template-columns: 2fr 1fr 3fr; gap: var(--pad); padding: var(--pad); border-top: 1px solid var(--ink); font-size: 12px; }
