@@ -20,6 +20,13 @@ img { display: block; width: 100%; filter: grayscale(1); }
 /* things that only appear in stillness */
 .s { opacity: 0; transition: opacity .9s linear; }
 .s.on { opacity: 1; }
+/* typewriter lines: no fade, the letters arrive one by one; the rest of the line keeps its place invisibly */
+.s.typed { transition: none; }
+.s .rest { visibility: hidden; }
+.s.typing > span:first-child::after {
+  content: ""; display: inline-block; width: .08em; height: .85em; margin-left: .03em; vertical-align: -.08em;
+  background: currentColor; opacity: .7;
+}
 
 /* ---------- I. heartbeats ---------- */
 .beat {
@@ -43,7 +50,8 @@ img { display: block; width: 100%; filter: grayscale(1); }
 .name.on { opacity: 1; }
 .name span { font-size: clamp(64px, 13vw, 220px); line-height: .8; letter-spacing: -.07em; }
 .name small { font-weight: 400; font-size: 14px; margin-top: 2vh; }
-.hint { position: absolute; bottom: var(--pad); left: 0; right: 0; text-align: center; font-size: 11px; color: var(--mute); transition: opacity .6s linear; }
+/* the hint stays at the bottom of the visible window (also in a small browser window), until you scroll on */
+.hint { position: fixed; bottom: calc(var(--pad) + 1vh); left: 0; right: 0; z-index: 3; text-align: center; font-size: 11px; color: var(--mute); transition: opacity .6s linear; }
 
 /* ---------- II. letters ---------- */
 .letters { padding: 16vh var(--pad) 10vh; position: relative; }

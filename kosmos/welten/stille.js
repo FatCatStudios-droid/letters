@@ -32,7 +32,60 @@
 
   /* ---------- II. letters reveal line by line, only while still ---------- */
   const blocks = [...document.querySelectorAll(".letter")];
+  const letters = [...document.querySelectorAll("article.letter")];
   let blockClock = 0;
+
+  /* dorothea's voice: stille-0 is the opening ("und mein herz …"), stille-1 … 7 the seven letters.
+     the shell plays them (one at a time); here we only say which, and when it should go */
+  // when dorothea begins and ends each line (seconds into the recording, measured in the recordings themselves):
+  // each line is typed, like on a typewriter, while she speaks it
+  const LINE_AT = [
+    [[.18, 2.37], [4.36, 7.32], [9.32, 13.96], [14.44, 17.32]],   // und mein herz … · als schlug … · dieser eine … · und eine ahnung von dir
+    [[.18, 3.38], [3.41, 5.35], [7.62, 11.24]],                   // 01
+    [[.18, 5.44], [6.66, 10.17]],                                 // 02
+    [[.18, 1.38], [2.40, 8.50]],                                  // 03
+    [[.18, 4.46], [4.85, 6.23], [7.98, 11.21]],                   // 04
+    [[.18, 1.30], [2.37, 7.31], [9.31, 11.66], [13.49, 18.29]],   // 05
+    [[.18, 2.90], [4.39, 6.60]],                                  // 06
+    [[.18, 4.86], [6.22, 9.45]],                                  // 07
+  ];
+  // typewriter: the typed part shows, the rest keeps its place invisibly (so nothing jumps while it types)
+  const typeTo = (l, f) => {
+    if (l._full == null) {
+      l._full = l.textContent; l.textContent = "";
+      l._a = document.createElement("span"); l._b = document.createElement("span"); l._b.className = "rest";
+      l._b.textContent = l._full; l.append(l._a, l._b);
+    }
+    const k = Math.round(l._full.length * clamp(f));
+    if (l._k === k) return;
+    // one key strike per new letter (not for spaces, not when a whole line appears at once)
+    if (k > (l._k || 0) && k - (l._k || 0) < 4 && l._full[k - 1].trim()) kosmos.send({ tipp: 1 });
+    l._k = k; l._a.textContent = l._full.slice(0, k); l._b.textContent = l._full.slice(k);
+    l.classList.add("on", "typed");
+    l.classList.toggle("typing", k > 0 && k < l._full.length);
+  };
+  let speaking = null;           // { id, el, lines, at, t0 }
+  const speak = (n, el, lines) => {
+    speaking = { id: "stille-" + n, el, lines, at: LINE_AT[n], t0: performance.now() + 250 };
+    kosmos.send({ voice: speaking.id });
+  };
+  // the shell says when the sound really starts (after loading): the text follows that moment
+  addEventListener("message", e => {
+    const d = e.data;
+    if (d && d.kosmos && d.voiceStart && speaking && d.voiceStart === speaking.id) speaking.t0 = performance.now();
+  });
+  const follow = now => {
+    if (!speaking) return;
+    const t = (now - speaking.t0) / 1000;
+    speaking.lines.forEach((l, i) => { const [a, b] = speaking.at[i] || [0, 1]; if (t >= a) typeTo(l, (t - a) / (b - a)); });
+    const r = speaking.el.getBoundingClientRect();
+    if (r.bottom < innerHeight * .1 || r.top > innerHeight * .9) {
+      // the letter has left the screen: the voice fades, its words stay
+      kosmos.send({ voice: null });
+      speaking.lines.forEach(l => typeTo(l, 1));
+      speaking = null;
+    } else if (t > speaking.at.at(-1)[1] + 4) speaking = null;
+  };
   const inView = el => {
     const r = el.getBoundingClientRect();
     return r.top < innerHeight * .8 && r.bottom > innerHeight * .15;
@@ -133,27 +186,34 @@
     if (stillness > .97 && !merged) { merged = true; kosmos.send({ spark: "weich" }); }
     if (stillness < .5) merged = false;
     // the hint has done its work once the name has appeared: it never comes back over it
-    hint.style.opacity = stillness > .97 || name.classList.contains("on") ? 0 : 1;
+    hint.style.opacity = stillness > .97 || name.classList.contains("on") || scrollY > innerHeight * .25 ? 0 : 1;
 
-    // once the two beat as one, the first lines arrive — one every ~1.8 s of stillness
-    if (meetT >= 19 && stillness > .97 && shown < firstLines.length) {   // the words come as they finally move together
+    // while the two are still finding each other, dorothea begins: the first lines are typed with her voice
+    if (meetT >= 8 && stillness > .8 && shown === 0 && speaking?.el !== opening) {
       lineClock += dt;
-      if (lineClock > 1.8) { firstLines[shown++].classList.add("on"); lineClock = 0; }
+      if (lineClock > .6) { speak(0, opening, firstLines); lineClock = 0; }
     }
+    follow(now);
+    shown = firstLines.filter(l => l._full != null && l._k === l._full.length).length;   // lines fully typed
     if (shown === firstLines.length) {
       lineClock += dt;
       if (lineClock > 2.2) name.classList.add("on");
     }
 
-    // letters: the block in view reveals its next line when you pause
+    // letters: when you pause, the letter in view begins: dorothea reads it and its lines appear with her voice.
+    // pictures between the letters simply appear
     if (still) {
       blockClock += dt;
       if (blockClock > 1) {
         blockClock = 0;
         for (const b of blocks) {
-          if (!inView(b)) continue;
+          if (!inView(b) || speaking?.el === b) continue;
           const next = b.querySelector(".s:not(.on)");
-          if (next) { next.classList.add("on"); break; }
+          if (!next) continue;
+          const n = letters.indexOf(b);
+          if (n >= 0) speak(n + 1, b, [...b.querySelectorAll(".s")]);
+          else next.classList.add("on");
+          break;
         }
       }
     } else blockClock = 0;

@@ -160,8 +160,10 @@
   const heartCtx = () => {
     if (heart) return heart;
     const c = new (window.AudioContext || window.webkitAudioContext)();
-    const g = c.createGain(); g.gain.value = 0; g.connect(c.destination);
-    heart = { c, g, src: null };
+    // the heartbeat steps back (duck) while dorothea's voice reads a letter
+    const d = c.createGain(); d.connect(c.destination);
+    const g = c.createGain(); g.gain.value = 0; g.connect(d);
+    heart = { c, g, d, src: null };
     fetch("audio/herz.m4a").then(r => r.arrayBuffer()).then(b => c.decodeAudioData(b)).then(buf => {
       const s = c.createBufferSource(); s.buffer = buf; s.loop = true; s.connect(g); s.start(); heart.src = s;
     }).catch(() => {});
@@ -180,6 +182,60 @@
     h.g.gain.cancelScheduledValues(now);
     try { h.g.gain.setValueCurveAtTime(curve, now + .01, dur); }
     catch { h.g.gain.setValueAtTime(from, now); h.g.gain.linearRampToValueAtTime(to, now + dur); }
+  };
+
+  /* ---------- stille: dorothea reads the letters ----------
+     the page sends { voice: "stille-3" } when a letter starts to appear, { voice: null } when it leaves the screen.
+     one voice at a time; it plays in the heartbeat's context (already awake on this page, also on phones). */
+  const VOICE_LEVEL = 1, VOICE_OUT = 2.5, HEART_DUCK = .4;
+  const voiceBufs = {};
+  let voice = null;
+  const duckHeart = on => { if (heart) { const now = heart.c.currentTime; hold(heart.d.gain, now); heart.d.gain.setTargetAtTime(on ? HEART_DUCK : 1, now, on ? .4 : 1.2); } };
+  const stopVoice = (out = VOICE_OUT) => {
+    const v = voice; if (!v) return;
+    voice = null; duckHeart(false);
+    if (!v.g) return;                                 // was still loading: it simply never starts
+    const now = heart.c.currentTime;
+    hold(v.g.gain, now); v.g.gain.setTargetAtTime(0, now, out / 4);
+    setTimeout(() => { try { v.src.stop(); } catch {} }, out * 1000 + 300);
+  };
+  const playVoice = async id => {
+    if (voice?.id === id) return;
+    stopVoice(1.8);
+    const h = heartCtx(); h.c.resume();
+    tippBuf ||= fetch("audio/tipp.m4a?v=20261126").then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b)).catch(() => null);
+    const me = { id }; voice = me;
+    let buf;
+    try { buf = await (voiceBufs[id] ||= fetch(`audio/${id}.m4a?v=20261126`).then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b))); }
+    catch { if (voice === me) voice = null; return; }
+    if (voice !== me) return;
+    const s = h.c.createBufferSource(); s.buffer = buf;
+    const g = h.c.createGain(); g.gain.value = 0; s.connect(g); g.connect(h.c.destination);
+    const now = h.c.currentTime;
+    g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(VOICE_LEVEL, now + .08);
+    s.start(now); me.src = s; me.g = g;
+    frame.contentWindow?.postMessage({ kosmos: 1, voiceStart: id }, "*");
+    s.onended = () => { if (voice === me) { voice = null; duckHeart(false); } };
+    duckHeart(true);
+  };
+
+  /* typewriter: each letter typed on the stille page strikes one key (splice "typewriters and typing", cut into
+     14 single strikes, one every 0.15 s in tipp.m4a). quiet, slightly varied, never twice the same in a row */
+  const TIPP_LEVEL = .16, TIPP_N = 14, TIPP_SLOT = .15;
+  let tippBuf = null, tippLast = -1;
+  const tipp = () => {
+    if (!heart || heartWant !== 1 && !voice) return;
+    const c = heart.c;
+    if (!tippBuf) { tippBuf = fetch("audio/tipp.m4a?v=20261126").then(r => r.arrayBuffer()).then(b => c.decodeAudioData(b)).catch(() => null); return; }
+    tippBuf.then(buf => {
+      if (!buf) return;
+      let i; do i = Math.floor(Math.random() * TIPP_N); while (i === tippLast); tippLast = i;
+      const s = c.createBufferSource(), g = c.createGain();
+      s.buffer = buf; s.playbackRate.value = .95 + Math.random() * .1;
+      g.gain.value = TIPP_LEVEL * (.6 + Math.random() * .4);
+      s.connect(g); g.connect(c.destination);
+      s.start(c.currentTime, i * TIPP_SLOT, .12);
+    });
   };
 
   // want = what the visitor (or the page) asked for; the context may still be loading or waiting for a tap
@@ -244,6 +300,8 @@
     if (d.spark) spark(d.spark);
     if (d.scrub && on && here === "naehe") onScrub(d.scrub);
     if ("heart" in d && current?.heart) { heartPage = !!d.heart; if (panel.hidden) setHeart(heartPage ? 1 : 0); }
+    if (d.tipp && current?.heart && panel.hidden) tipp();
+    if ("voice" in d && current?.heart) { if (/^stille-\d$/.test(d.voice) && panel.hidden) playVoice(d.voice); else stopVoice(); }
     applyMix();
   });
 
@@ -276,14 +334,14 @@
     if (current === w) return;
     current = w; here = w.id; worldMix = w.mix; duck = false; level = 1;
     frame.style.transition = "none"; frame.style.opacity = 0;
-    frame.src = `welten/${w.file}.html?v=20261125zp`;
+    frame.src = `welten/${w.file}.html?v=20261126w`;
     tabs.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.id === w.id));
     document.title = w.id === "home" ? "letters — eine ahnung von dir" : `letters — ${w.name}`;
     spark("kratzen");
     // sound is on by itself only in nähe; every other page starts silent
     if (w.ton) startTon(); else if (on || want) stopTon();
     // the heartbeat belongs to stille only: arriving starts its slow fade-in, leaving fades it out
-    if (w.heart) { heartPage = true; setHeart(1); } else setHeart(0);
+    if (w.heart) { heartPage = true; setHeart(1); } else { setHeart(0); stopVoice(); }
   };
   // arriving straight on nähe: browsers only allow sound after a first tap or key, so start it then
   const firstTouch = () => {
@@ -306,7 +364,7 @@
       if (!current) open(WORLDS[0]);
       panel.hidden = false; here = "info"; worldMix = INFO_MIX;
       panel.dataset.group = group;
-      setHeart(0);                                  // über / journal / kontakt: the heartbeat fades out
+      setHeart(0); stopVoice();                     // über / journal / kontakt: heartbeat and voice fade out
       panel.querySelectorAll(".sheet").forEach(s => s.hidden = s.dataset.group !== group);
       requestAnimationFrame(() => {
         if (id === group) panel.scrollTop = 0;

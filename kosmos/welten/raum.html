@@ -95,7 +95,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   <button class="stopall" type="button" hidden>alles stoppen</button>
 </div>
 
-<script src="bridge.js?v=20261125zp"></script>
+<script src="bridge.js?v=20261126w"></script>
 <script>
 (() => {
   const wide = innerWidth >= 700;
@@ -106,7 +106,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
     { src: "stimme-1",  kind: "voice", name: "stimme eins", vol: 1,   fin: 3000, img: "s-draussen", pos: "40% 35%", at: wide ? [3, 6, 28, 38]   : [0, 4, 52, 24] },
     { src: "stimme-2",  kind: "voice", name: "stimme zwei", vol: 1,   fin: 3000, img: "s-tulln",    pos: "35% 30%", at: wide ? [14, 20, 24, 30] : [10, 14, 46, 20] },
     { src: "stimme-3",  kind: "voice", name: "stimme drei", vol: 1,   fin: 3000, img: "s-buehne-2", pos: "55% 30%", at: wide ? [2, 30, 22, 34]  : [0, 22, 40, 22] },
-    { src: "klavier-1", kind: "music", name: "klavier",     vol: .37, fin: 3500, img: "c-klavier",  pos: "50% 40%", at: wide ? [82, 3, 18, 44]  : [54, 26, 46, 22], group: "klavier" },
+    { src: "klavier-1", kind: "music", name: "klavier",     vol: .37, fin: 250,  img: "c-klavier",  pos: "50% 40%", at: wide ? [82, 3, 18, 44]  : [54, 26, 46, 22], group: "klavier" },
     { src: "beat-a",    kind: "music", name: "beat",        vol: .28, fin: 3500, img: "c-saal",     pos: "50% 30%", at: wide ? [84, 50, 16, 46] : [62, 46, 38, 26], group: "beat" },
     { src: "pad-a",     kind: "music", name: "psalterium",  vol: .18, fin: 6000, img: "c-gitarre",  pos: "45% 40%", at: wide ? [40, 0, 20, 24]  : [36, 0, 30, 16] },
     // films, each with its own place on the surface
@@ -202,6 +202,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   };
   // klavier ends whatever music was playing; beat ends the klavier; beat and psalterium sound together
   const ENDS = { klavier: ["beat-a", "pad-a"], beat: ["klavier-1"] };
+  const fresh = c => { const a = new Audio(`../audio/${c.src}.m4a?v=20261126`); a.preload = "auto"; return a; };
+  CUES.forEach(c => { if (c.kind === "voice" || c.kind === "music") c.pre = fresh(c); });
   const play = c => {
     audioCtx(); ctx.resume();
     // voice over voice: a long crossfade (6 s), then the old voice is gone by itself
@@ -210,7 +212,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
     before.forEach(o => stop(o, XFADE));
     const fin = before.length ? XFADE : c.fin;
     if (c.group) [...playing.keys()].filter(o => (ENDS[c.group] || []).includes(o.src)).forEach(o => stop(o, 4000));
-    const a = new Audio(`../audio/${c.src}.m4a`);
+    // the file was already fetched in the background, so the sound starts right on the click
+    const a = c.pre || fresh(c); c.pre = fresh(c);
     const g = ctx.createGain(); g.gain.value = 0;
     ctx.createMediaElementSource(a).connect(g); g.connect(ctx.destination);
     const p = { a, g };
@@ -301,7 +304,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
     room.appendChild(b); c.el = b;
     if (c.kind === "dance") {
       const v = document.createElement("video");
-      v.className = "film"; v.src = `../video/${c.src}.mp4?v=20261125zp`; v.muted = true; v.loop = true; v.playsInline = true; v.preload = "auto";
+      v.className = "film"; v.src = `../video/${c.src}.mp4?v=20261126w`; v.muted = true; v.loop = true; v.playsInline = true; v.preload = "auto";
       const [x, y, w, h] = c.at;
       Object.assign(v.style, { left: x + "%", top: y + "%", width: w + "%", height: h + "%" });
       room.insertBefore(v, room.querySelector(".title"));
