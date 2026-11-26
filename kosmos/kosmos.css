@@ -145,3 +145,6 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 }
 .world { bottom: var(--tabs); height: calc(100% - var(--bar) - var(--tabs)); }
 .panel { bottom: var(--tabs); }
+
+/* the association's logo where its name stands */
+.zu { display: block; height: 15px; width: auto; margin: 3px 0 6px; opacity: .9; }
