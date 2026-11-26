@@ -1,16 +1,70 @@
 /* review notes, right on the page: right click (laptop) or a long press (phone) anywhere — on a symbol, an image, a line —
    opens a small note. it is saved together with where exactly it was left (tab, element, position), so the change can be
-   found again without describing it. only active on the local preview server (tools/serve.py keeps the notes);
-   on the public site /__notes does not exist and nothing of this appears. */
+   found again without describing it. it is active in two places only:
+   - the review copy on claude.ai (notes kept in the artifact's shared database),
+   - the local preview server (tools/serve.py keeps them in notizen.json).
+   on the public site neither exists and nothing of this appears. */
 (() => {
   const API = "/__notes";
   const NAMES = { home: "home", naehe: "nähe", stille: "stille", stueck: "über · das stück", ensemble: "über · ensemble",
                   presse: "über · presse", journal: "journal", kontakt: "kontakt", impressum: "kontakt · impressum" };
-  let notes = [], frame = null, pop = null;
+  let notes = [], frame = null, pop = null, store = null;
 
-  fetch(API, { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(list => {
-    if (Array.isArray(list)) { notes = list; start(); }
-  }).catch(() => {});
+  const viaDb = async () => {
+    const db = await window.claude.use("db"); if (!db) return false;
+    const col = db.collection("notes");
+    store = {
+      add: async n => { await col.add({ ...n, status: "offen", created: new Date().toISOString() }); },
+      del: async id => { await col.doc(id).delete(); },
+    };
+    col.onSnapshot(s => { notes = s.docs.map(d => ({ id: d.id, ...d.data() })); marks(); }, () => {});
+    return true;
+  };
+  /* the team link (…/kosmos/?notizen=<address, base64>) turns notes on for people anywhere, without any account:
+     a note becomes a ready-made e-mail in their own mail app. the address only lives in that link, never in the code. */
+  const mailTo = () => {
+    const v = new URLSearchParams(location.search).get("notizen"); if (!v) return "";
+    try { const a = atob(v.replace(/-/g, "+").replace(/_/g, "/")); return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(a) ? a : ""; } catch { return ""; }
+  };
+  let saveLabel = "speichern";
+  const viaMail = () => {
+    const to = mailTo();
+    saveLabel = "senden";
+    store = {
+      add: async n => {
+        const subject = `letters notiz · ${NAMES[n.tab] || n.tab} · ${n.where.label}`.slice(0, 140);
+        const body = [n.text, "", "———", `wo: ${NAMES[n.tab] || n.tab} · ${n.where.label}`, `element: ${n.where.el}`,
+          `stelle: x ${n.x}, y ${n.y}, gescrollt ${n.scroll} · fenster ${n.vw}×${n.vh} · ${n.device}`].join("\n");
+        location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        toast("dein mailprogramm öffnet sich – bitte nur noch absenden.");
+      },
+      del: async () => {},
+    };
+    return true;
+  };
+  const toast = msg => {
+    const t = document.createElement("div"); t.className = "nz-toast"; t.textContent = msg; document.body.append(t);
+    setTimeout(() => t.remove(), 6000);
+  };
+  const viaServer = async () => {
+    const r = await fetch(API, { cache: "no-store" }); if (!r.ok) return false;
+    const list = await r.json(); if (!Array.isArray(list)) return false;
+    notes = list;
+    const post = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      .then(r => { if (!r.ok) throw 0; return r.json(); });
+    store = {
+      add: async n => { notes.push(await post(API, n)); marks(); },
+      del: async id => { await post(API + "/delete", { id }); notes = notes.filter(x => x.id !== id); marks(); },
+    };
+    return true;
+  };
+  (async () => {
+    await null;   // let the rest of this file set itself up first
+    try {
+      const ok = mailTo() ? viaMail() : window.claude?.use ? await viaDb() : await viaServer();
+      if (ok) start();
+    } catch {}
+  })();
 
   const tab = () => location.hash.slice(1) || "home";
   const isWorld = () => document.getElementById("panel")?.hidden !== false;
@@ -59,6 +113,8 @@
     .nz-pop .nz-old{font-size:13px;white-space:pre-wrap;border-left:2px solid #c8a564;padding-left:8px}
     .nz-mark{position:fixed;z-index:9998;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#c8a564;
       box-shadow:0 0 0 3px rgba(11,11,11,.7);cursor:pointer;padding:0;border:0}
+    .nz-toast{position:fixed;z-index:9999;left:50%;bottom:calc(var(--tabs,46px) + 58px);transform:translateX(-50%);width:max-content;max-width:calc(100vw - 24px);
+      background:#c8a564;color:#0b0b0b;border-radius:999px;padding:7px 14px;font:500 13px "Inter Tight",Arial,sans-serif}
     .nz-count{position:fixed;z-index:9998;right:max(10px,env(safe-area-inset-right));top:calc(env(safe-area-inset-top) + 56px);
       font:500 12px "Inter Tight",Arial,sans-serif;color:#0b0b0b;background:#c8a564;border-radius:999px;padding:3px 9px;pointer-events:none}`;
   const style = document.createElement("style"); style.textContent = css;
@@ -70,20 +126,19 @@
     const t = tab();
     pop = document.createElement("div"); pop.className = "nz-pop";
     pop.innerHTML = `<div class="nz-where"></div><textarea placeholder="was soll hier anders sein?"></textarea>
-      <div class="nz-row"><span></span><button type="button" class="nz-no">abbrechen</button><button type="button" class="nz-save">speichern</button></div>`;
+      <div class="nz-row"><span></span><button type="button" class="nz-no">abbrechen</button><button type="button" class="nz-save"></button></div>`;
+    pop.querySelector(".nz-save").textContent = saveLabel;
     pop.querySelector(".nz-where").textContent = (NAMES[t] || t) + " · " + where.label;
     const ta = pop.querySelector("textarea"), info = pop.querySelector(".nz-row span");
     pop.querySelector(".nz-no").onclick = close;
     pop.querySelector(".nz-save").onclick = async () => {
       const text = ta.value.trim(); if (!text) { ta.focus(); return; }
-      info.textContent = "wird gespeichert …";
+      info.textContent = saveLabel === "senden" ? "" : "wird gespeichert …";
       try {
-        const r = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-          text, tab: t, where, x: Math.round(x), y: Math.round(y), scroll: Math.round(scroll), vw, vh,
-          device: matchMedia("(hover: none)").matches ? "handy" : "laptop" }) });
-        if (!r.ok) throw 0;
-        notes.push(await r.json()); close(); marks();
-      } catch { info.textContent = "nicht gespeichert – läuft der mac noch?"; }
+        await store.add({ text, tab: t, where, x: Math.round(x), y: Math.round(y), scroll: Math.round(scroll), vw, vh,
+          device: matchMedia("(hover: none)").matches ? "handy" : "laptop" });
+        close();
+      } catch { info.textContent = "nicht gespeichert – bitte nochmal versuchen."; }
     };
     ta.addEventListener("keydown", e => { if (e.key === "Escape") close(); if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) pop.querySelector(".nz-save").click(); });
     document.body.append(pop);
@@ -119,8 +174,7 @@
     const del = pop.querySelector(".nz-del");
     del.onclick = async () => {
       if (del.dataset.sure !== "1") { del.dataset.sure = "1"; del.textContent = "wirklich löschen?"; return; }
-      try { await fetch(API + "/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: n.id }) });
-        notes = notes.filter(x => x.id !== n.id); close(); marks(); } catch {}
+      try { await store.del(n.id); close(); } catch {}
     };
     document.body.append(pop);
   };
