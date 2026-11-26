@@ -207,7 +207,7 @@
     tippBuf ||= fetch("audio/tipp.m4a?v=20261126b").then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b)).catch(() => null);
     const me = { id }; voice = me;
     let buf;
-    try { buf = await (voiceBufs[id] ||= fetch(`audio/${id}.m4a?v=20261126`).then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b))); }
+    try { buf = await (voiceBufs[id] ||= fetch(`audio/${id}.m4a?v=20261126c`).then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b))); }
     catch { if (voice === me) voice = null; return; }
     if (voice !== me) return;
     const s = h.c.createBufferSource(); s.buffer = buf;
@@ -346,7 +346,7 @@
     if (current === w) return;
     current = w; here = w.id; worldMix = w.mix; duck = false; level = 1;
     frame.style.transition = "none"; frame.style.opacity = 0;
-    frame.src = `welten/${w.file}.html?v=20261126z`;
+    frame.src = `welten/${w.file}.html?v=20261127a`;
     tabs.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.id === w.id));
     document.title = w.id === "home" ? "letters — eine ahnung von dir" : `letters — ${w.name}`;
     spark("kratzen");
