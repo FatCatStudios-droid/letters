@@ -102,12 +102,11 @@
     return m ? `${m} ${m === 1 ? "minute" : "minuten"} ${ss}` : ss;
   };
 
-  /* ---------- the heartbeat sound: on while the opening is in view, fading out once you scroll on to the letters ---------- */
+  /* ---------- the heartbeat sound: on the whole time you are in stille (it only fades out when you leave) ---------- */
   const opening = document.querySelector(".beat");
   let heartOn = null;
   const heartCheck = () => {
-    const r = opening.getBoundingClientRect();
-    const v = r.bottom > innerHeight * .45;           // most of the opening still on screen
+    const v = true;                                   // the heartbeat stays as long as you are in stille
     if (v !== heartOn) { heartOn = v; kosmos.send({ heart: v }); }
   };
   addEventListener("scroll", heartCheck, { passive: true });

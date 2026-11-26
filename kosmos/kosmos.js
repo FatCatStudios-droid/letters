@@ -154,7 +154,7 @@
 
   /* ---------- stille: a slow heartbeat (one beat every 2.5 s) ----------
      its own small audio context, independent of the background loops (those stay off in stille).
-     fades in over 5 s when you arrive, out over 4.5 s when you scroll on to the letters or leave the page. */
+     fades in over 5 s when you arrive, out over 4.5 s when you leave the page. */
   const HEART_LEVEL = .75, HEART_IN = 5, HEART_OUT = 4.5;
   let heart = null, heartWant = 0;
   const heartCtx = () => {
@@ -187,7 +187,7 @@
   /* ---------- stille: dorothea reads the letters ----------
      the page sends { voice: "stille-3" } when a letter starts to appear, { voice: null } when it leaves the screen.
      one voice at a time; it plays in the heartbeat's context (already awake on this page, also on phones). */
-  const VOICE_LEVEL = 1, VOICE_OUT = 2.5, HEART_DUCK = .4;
+  const VOICE_LEVEL = 1, VOICE_OUT = 2.5, HEART_DUCK = .7;
   const voiceBufs = {};
   let voice = null;
   const duckHeart = on => { if (heart) { const now = heart.c.currentTime; hold(heart.d.gain, now); heart.d.gain.setTargetAtTime(on ? HEART_DUCK : 1, now, on ? .4 : 1.2); } };
@@ -346,7 +346,7 @@
     if (current === w) return;
     current = w; here = w.id; worldMix = w.mix; duck = false; level = 1;
     frame.style.transition = "none"; frame.style.opacity = 0;
-    frame.src = `welten/${w.file}.html?v=20261126x`;
+    frame.src = `welten/${w.file}.html?v=20261126y`;
     tabs.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.id === w.id));
     document.title = w.id === "home" ? "letters — eine ahnung von dir" : `letters — ${w.name}`;
     spark("kratzen");
