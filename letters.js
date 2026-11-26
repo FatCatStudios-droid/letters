@@ -170,14 +170,12 @@
     return heart;
   };
   let heartPage = false;          // what the stille page itself asks for (opening in view or not)
-  const setHeart = v => {
-    if (v === heartWant) return;
-    heartWant = v;
-    if (!v && !heart) return;
+  let heartAway = false;          // from the first letter on the heartbeat is gone, until stille is opened again
+  const HEART_AWAY = 14;          // seconds: the slow fade when letter 1 begins
+  const fadeHeart = (to, dur) => {
     const h = heartCtx(), now = h.c.currentTime;
-    if (v) h.c.resume();
     // a soft s-shaped fade (slow start, slow end) instead of a straight line
-    const from = h.g.gain.value, to = v ? HEART_LEVEL : 0, dur = v ? HEART_IN : HEART_OUT;
+    const from = h.g.gain.value;
     const curve = new Float32Array(64).map((_, i) => from + (to - from) * (1 - Math.cos(Math.PI * i / 63)) / 2);
     // clear everything planned, also a fade still running (safari refuses a new curve on top of a running one,
     // and the heartbeat would then simply stay on)
@@ -185,6 +183,14 @@
     try { h.g.gain.setValueAtTime(from, now); h.g.gain.setValueCurveAtTime(curve, now + .01, dur); }
     catch { try { h.g.gain.cancelScheduledValues(0); h.g.gain.setValueAtTime(from, now); h.g.gain.linearRampToValueAtTime(to, now + dur); } catch { h.g.gain.value = to; } }
   };
+  const setHeart = v => {
+    if (v === heartWant) return;
+    heartWant = v;
+    if (!v && !heart) return;
+    if (v) heartCtx().c.resume();
+    fadeHeart(v && !heartAway ? HEART_LEVEL : 0, v ? HEART_IN : HEART_OUT);
+  };
+  const heartGoes = () => { if (heartAway || !heart) return; heartAway = true; fadeHeart(0, HEART_AWAY); };
 
   /* ---------- stille: dorothea reads the letters ----------
      the page sends { voice: "stille-3" } when a letter starts to appear, { voice: null } when it leaves the screen.
@@ -243,7 +249,7 @@
     const h = heartCtx(); h.c.resume();
     const me = { n }; piano = me;
     let buf;
-    try { buf = await (pianoBufs[n] ||= fetch(`audio/piano-${n}.m4a?v=20261128b`).then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b))); }
+    try { buf = await (pianoBufs[n] ||= fetch(`audio/piano-${n}.m4a?v=20261128c`).then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b))); }
     catch { if (piano === me) piano = null; return; }
     if (piano !== me) return;
     const src = h.c.createBufferSource(); src.buffer = buf; src.loop = true;
@@ -351,7 +357,7 @@
     if (d.tipp && current?.heart && panel.hidden) tipp();
     if (d.zeile && current?.heart && panel.hidden) zeile();
     if ("voice" in d && current?.heart) {
-      if (/^stille-\d$/.test(d.voice) && panel.hidden) { playVoice(d.voice); const n = +d.voice.slice(7); if (n >= 1) playPiano(n); }
+      if (/^stille-\d$/.test(d.voice) && panel.hidden) { playVoice(d.voice); const n = +d.voice.slice(7); if (n >= 1) { playPiano(n); heartGoes(); } }
       else stopVoice();                               // the letter left the screen: the voice fades, its piano keeps looping
     }
     applyMix();
@@ -389,7 +395,7 @@
     if (current === w && !force && !parked) return;
     current = w; parked = false; here = w.id; worldMix = w.mix; duck = false; level = 1;
     frame.style.transition = "none"; frame.style.opacity = 0;
-    frame.src = `welten/${w.file}.html?v=20261128b`;
+    frame.src = `welten/${w.file}.html?v=20261128c`;
     tabs.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.id === w.id));
     document.title = w.id === "home" ? "letters — eine ahnung von dir" : `letters — ${w.name}`;
     spark("kratzen");
@@ -398,7 +404,8 @@
     // a voice never outlives its page, also when the same tab is tapped again and stille starts over
     stopVoice(1); stopPiano();
     // the heartbeat belongs to stille only: arriving starts its slow fade-in, leaving fades it out
-    if (w.heart) { heartPage = true; setHeart(1); } else setHeart(0);
+    // arriving in stille (also tapping it again) brings the heartbeat back; letter 1 will let it go again
+    if (w.heart) { const back = heartAway; heartAway = false; heartPage = true; if (back) heartWant = -1; setHeart(1); } else setHeart(0);
   };
   // arriving straight on nähe: browsers only allow sound after a first tap or key, so start it then
   const firstTouch = () => {
