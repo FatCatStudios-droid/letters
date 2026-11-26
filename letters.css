@@ -151,3 +151,34 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 /* the association's logo where its name stands */
 .zu { display: block; height: 15px; width: auto; margin: 3px 0 6px; opacity: .9; }
 .photos.press-text { margin-top: 0; }
+
+/* ---------- laptop and larger: one line on top. the three pages on the left,
+   über · journal · instagram · kontakt on the right. the open one is a small gold button ---------- */
+@media (min-width: 761px) and (hover: hover) {
+  :root { --bar: 57px; --tabs: 0px; }
+  .bar { display: flex; align-items: center; justify-content: space-between; height: var(--bar); padding: 0 var(--pad); }
+  .tabs { order: 0; height: auto; padding: 0; display: flex; gap: 6px; }
+  .row1 {
+    order: 1; position: static; height: auto; padding: 0; display: flex; gap: 6px;
+    background: none; border: 0;
+  }
+  .row1 .t-journal { justify-self: auto; }
+  .ctl { gap: 6px; }
+  .tab, .row1 .top { padding: 7px 14px; justify-self: auto !important; }
+  .insta { padding: 7px 8px; }
+  .world { bottom: 0; height: calc(100% - var(--bar)); }
+  .panel { bottom: 0; }
+}
+
+/* the open page or sheet: a small gold button with the slow sheen, on every screen */
+.tab, .row1 .top { padding: 6px 12px; border-radius: 999px; transition: color .3s linear, background-color .3s linear; }
+.tab:first-child, .row1 .t-ueber { margin-left: -8px; }
+.tabs .tab:nth-child(3), .row1 .t-kontakt { margin-right: -8px; }
+.tab.on, .row1 .top.on, .row1 .top.on:hover {
+  color: var(--ink); background: var(--sheen); background-size: 220% 220%; animation: sheen 9s ease-in-out infinite alternate;
+}
+@media (min-width: 761px) and (hover: hover) {
+  .tab:first-child, .row1 .t-ueber, .tabs .tab:nth-child(3), .row1 .t-kontakt { margin: 0; }
+  .tabs { margin-left: -14px; } .row1 { margin-right: -14px; }
+  .tab, .row1 .top { padding: 7px 14px; }
+}

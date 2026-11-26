@@ -249,7 +249,7 @@
     const h = heartCtx(); h.c.resume();
     const me = { n }; piano = me;
     let buf;
-    try { buf = await (pianoBufs[n] ||= fetch(`audio/piano-${n}.m4a?v=20261128e`).then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b))); }
+    try { buf = await (pianoBufs[n] ||= fetch(`audio/piano-${n}.m4a?v=20261128g`).then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b))); }
     catch { if (piano === me) piano = null; return; }
     if (piano !== me) return;
     const src = h.c.createBufferSource(); src.buffer = buf; src.loop = true;
@@ -263,6 +263,9 @@
      20 single strikes, one every 0.15 s in tipp.m4a). quiet, slightly varied, never twice the same in a row.
      at the end of a line the carriage return sounds (zeile.m4a) */
   const TIPP_LEVEL = .16, TIPP_N = 20, TIPP_SLOT = .15, ZEILE_LEVEL = .2;
+  // where the strike really sits in each slot (measured in tipp.m4a), so the sound comes with the letter, not after it.
+  // slot 18 strikes too late and too softly-cut: it is left out
+  const TIPP_ON = [0, 0, 0, .029, 0, 0, .037, 0, 0, .041, 0, .002, 0, 0, 0, 0, 0, 0, null, 0];
   let tippBuf = null, tippLast = -1, zeileBuf = null;
   const zeile = () => {
     if (!heart || heartWant !== 1 && !voice) return;
@@ -273,18 +276,21 @@
       s.buffer = buf; g.gain.value = ZEILE_LEVEL; s.connect(g); g.connect(c.destination); s.start();
     });
   };
-  const tipp = () => {
+  const tipp = (n = 1, span = 0) => {
     if (!heart || heartWant !== 1 && !voice) return;
     const c = heart.c;
     if (!tippBuf) { tippBuf = fetch("audio/tipp.m4a?v=20261126b").then(r => r.arrayBuffer()).then(b => c.decodeAudioData(b)).catch(() => null); return; }
     tippBuf.then(buf => {
       if (!buf) return;
-      let i; do i = Math.floor(Math.random() * TIPP_N); while (i === tippLast); tippLast = i;
-      const s = c.createBufferSource(), g = c.createGain();
-      s.buffer = buf; s.playbackRate.value = .95 + Math.random() * .1;
-      g.gain.value = TIPP_LEVEL * (.6 + Math.random() * .4);
-      s.connect(g); g.connect(c.destination);
-      s.start(c.currentTime, i * TIPP_SLOT, .12);
+      // several letters in one frame: their strikes are spread over that frame, so each letter keeps its own sound
+      for (let j = 0; j < Math.min(n, 10); j++) {
+        let i; do i = Math.floor(Math.random() * TIPP_N); while (i === tippLast || TIPP_ON[i] == null); tippLast = i;
+        const s = c.createBufferSource(), g = c.createGain();
+        s.buffer = buf; s.playbackRate.value = .95 + Math.random() * .1;
+        g.gain.value = TIPP_LEVEL * (.6 + Math.random() * .4);
+        s.connect(g); g.connect(c.destination);
+        s.start(c.currentTime + j * span / n, i * TIPP_SLOT + TIPP_ON[i], Math.min(.12, TIPP_SLOT - .003 - TIPP_ON[i]));
+      }
     });
   };
 
@@ -354,7 +360,7 @@
     if (d.spark) spark(d.spark);
     if (d.scrub && on && here === "naehe") onScrub(d.scrub);
     if ("heart" in d && current?.heart) { heartPage = !!d.heart; if (panel.hidden) setHeart(heartPage ? 1 : 0); }
-    if (d.tipp && current?.heart && panel.hidden) tipp();
+    if (d.tipp && current?.heart && panel.hidden) tipp(+d.tipp || 1, +d.span || 0);
     if (d.zeile && current?.heart && panel.hidden) zeile();
     if ("voice" in d && current?.heart) {
       if (/^stille-\d$/.test(d.voice) && panel.hidden) { playVoice(d.voice); const n = +d.voice.slice(7); if (n >= 1) { playPiano(n); heartGoes(); } }
@@ -395,7 +401,7 @@
     if (current === w && !force && !parked) return;
     current = w; parked = false; here = w.id; worldMix = w.mix; duck = false; level = 1;
     frame.style.transition = "none"; frame.style.opacity = 0;
-    frame.src = `welten/${w.file}.html?v=20261128e`;
+    frame.src = `welten/${w.file}.html?v=20261128g`;
     tabs.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.id === w.id));
     document.title = w.id === "home" ? "letters — eine ahnung von dir" : `letters — ${w.name}`;
     spark("kratzen");

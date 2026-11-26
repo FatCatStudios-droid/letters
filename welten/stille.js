@@ -12,7 +12,7 @@
   let stillness = 0;       // 0 = restless, 1 = fully still
   let stillTotal = 0;      // seconds the visitor has been still
   let last = performance.now();
-  let sendClock = 0, merged = false;
+  let sendClock = 0, merged = false, tickDt = 1 / 60;
 
   /* ---------- I. two heartbeats find each other ---------- */
   const pair = document.querySelector(".pair");
@@ -59,8 +59,12 @@
     const k = Math.round(l._full.length * clamp(f));
     if (l._k === k) return;
     const prevK = l._k || 0;
-    // one key strike per new letter (not for spaces, not when a whole line appears at once)
-    if (k > (l._k || 0) && k - (l._k || 0) < 4 && l._full[k - 1].trim()) kosmos.send({ tipp: 1 });
+    // one key strike per new letter, also when a slow frame typed several at once (spread over that frame);
+    // not for spaces, not when a whole line appears at once
+    if (k > prevK && k - prevK <= 10) {
+      const n = [...l._full.slice(prevK, k)].filter(ch => ch.trim()).length;
+      if (n) kosmos.send({ tipp: n, span: Math.min(.1, tickDt) });
+    }
     l._k = k; l._a.textContent = l._full.slice(0, k); l._b.textContent = l._full.slice(k);
     l.classList.add("on", "typed");
     l.classList.toggle("typing", k > 0 && k < l._full.length);
@@ -115,9 +119,9 @@
   ["pointerdown", "keydown", "touchend"].forEach(e => addEventListener(e, () => kosmos.send({ heart: heartOn }), { once: true, passive: true }));
 
   const frame = now => {
-    const dt = Math.min(.1, (now - last) / 1000); last = now;
-    const still = idle() > 1.2;
-    stillness = clamp(stillness + (still ? dt / 7 : -dt / 2.5));
+    const dt = Math.min(.1, (now - last) / 1000); last = now; tickDt = dt;
+    const still = idle() > .6;
+    stillness = clamp(stillness + (still ? dt / 4 : -dt / 2.5));
     // in the cosmos: the music is only audible in stillness
     sendClock += dt;
     if (sendClock > .12) { sendClock = 0; kosmos.send({ level: Math.pow(stillness, 1.4) }); }
@@ -137,17 +141,18 @@
     meetT = still ? meetT + dt : Math.max(0, meetT - dt * .9);    // moving apart again happens slowly
     const ss = x => { x = clamp(x); return x * x * (3 - 2 * x); };
     const T = meetT;
-    let mB = T < 7 ? .5 * ss(T / 7) : T < 19 ? .5 : .5 + .5 * ss((T - 19) / 7);
+    const eo = x => { x = clamp(x); return 1 - (1 - x) * (1 - x) * (1 - x); };   // starts moving at once, settles softly
+    let mB = T < 4 ? .5 * eo(T / 4) : T < 16 ? .5 : .5 + .5 * ss((T - 16) / 7);
     // it is always "ich" who steps away
-    let mA = T < 7 ? .5 * ss(T / 7)
-           : T < 10 ? .5                                  // innehalten
-           : T < 14 ? .5 - .35 * ss((T - 10) / 4)        // ich geht langsam ein stück zurück
-           : T < 16 ? .15                                 // innehalten
-           : T < 19 ? .15 + .35 * ss((T - 16) / 3)       // und kommt wieder heran
-           : .5 + .5 * ss((T - 19) / 7);                  // dann kommen sie zusammen
+    let mA = T < 4 ? .5 * eo(T / 4)
+           : T < 7 ? .5                                   // innehalten
+           : T < 11 ? .5 - .35 * ss((T - 7) / 4)         // ich geht langsam ein stück zurück
+           : T < 13 ? .15                                 // innehalten
+           : T < 16 ? .15 + .35 * ss((T - 13) / 3)       // und kommt wieder heran
+           : .5 + .5 * ss((T - 16) / 7);                  // dann kommen sie zusammen
     meet = Math.min(mA, mB);
-    if (T >= 26 && !foundAt) foundAt = now;
-    if (T < 12) foundAt = 0;
+    if (T >= 23 && !foundAt) foundAt = now;
+    if (T < 9) foundAt = 0;
     // before the first meeting everything stays on one horizontal line. only once they have met do they
     // take the space a little, like two people: close · a pause · one withdraws · searching · forgiving · together
     let ax, ay, bx, by;
@@ -192,9 +197,9 @@
     hint.style.opacity = stillness > .97 || name.classList.contains("on") || scrollY > innerHeight * .25 ? 0 : 1;
 
     // while the two are still finding each other, dorothea begins: the first lines are typed with her voice
-    if (meetT >= 8 && stillness > .8 && shown === 0 && speaking?.el !== opening) {
+    if (meetT >= 3 && stillness > .5 && shown === 0 && speaking?.el !== opening) {
       lineClock += dt;
-      if (lineClock > .6) { speak(0, opening, firstLines); lineClock = 0; }
+      if (lineClock > .2) { speak(0, opening, firstLines); lineClock = 0; }
     }
     follow(now);
     shown = firstLines.filter(l => l._full != null && l._k === l._full.length).length;   // lines fully typed
@@ -209,9 +214,9 @@
     let due = null;
     for (const b of letters) {
       const r = b.getBoundingClientRect();
-      if (r.top < innerHeight * .5 && r.bottom > 0) due = b;      // the lowest letter above the middle wins
+      if (r.top < innerHeight * .62 && r.bottom > 0) due = b;      // the lowest letter above the middle wins
     }
-    if (due && speaking?.el !== due && due.querySelector(".s:not(.on)") && idle() > .5)
+    if (due && speaking?.el !== due && due.querySelector(".s:not(.on)") && idle() > .3)
       speak(letters.indexOf(due) + 1, due, [...due.querySelectorAll(".s")]);
     // pictures between the letters simply appear when you pause
     if (still) {
