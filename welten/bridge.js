@@ -9,7 +9,9 @@ window.kosmos = (() => {
     if (!d || !d.kosmos || e.source !== window.parent) return;
     if ("ton" in d) { ton = !!d.ton; listeners.forEach(fn => fn(ton)); }
   });
-  const send = msg => { if (inside) window.parent.postMessage({ kosmos: 1, ...msg }, "*"); };
+  // every message names its page, so the shell can ignore a page that is just being left
+  const page = location.pathname.split("/").pop().replace(/\.html$/, "");
+  const send = msg => { if (inside) window.parent.postMessage({ kosmos: 1, page, ...msg }, "*"); };
   send({ hello: true });
   return {
     inside,

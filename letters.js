@@ -259,6 +259,7 @@
     if (!ctx) {
       loading = true; tonBtn.textContent = "ton: lädt …";
       ctx = new (window.AudioContext || window.webkitAudioContext)();
+      ctx.resume().catch(() => {});      // still inside the tap: phones allow the sound only now
       master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
       sparkBus = ctx.createGain(); sparkBus.gain.value = 0; sparkBus.connect(ctx.destination);
       noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
@@ -305,9 +306,12 @@
   const tellWorld = () => frame.contentWindow?.postMessage({ kosmos: 1, ton: on }, "*");
   addEventListener("message", e => {
     const d = e.data; if (!d || !d.kosmos || e.source !== frame.contentWindow) return;
+    // the page being left keeps talking until the next one has loaded (on a slow line that takes a moment):
+    // its messages (stille's quiet level, its voice, its heartbeat …) must not reach the new page
+    if (d.page && d.page !== current?.file) return;
     if (d.mix) worldMix = { ...worldMix, ...d.mix };
     if ("duck" in d) duck = !!d.duck;
-    if ("level" in d) level = Math.max(0, Math.min(1, +d.level));
+    if ("level" in d && current?.heart) level = Math.max(0, Math.min(1, +d.level));
     if (d.startTon && !on && current?.ton && panel.hidden) startTon();   // only nähe may switch the sound on
     if (d.hello) tellWorld();
     if (d.spark) spark(d.spark);
@@ -329,7 +333,7 @@
     const t = document.createElement("a");
     t.href = `#${w.id}`; t.className = "tab"; t.dataset.id = w.id; t.textContent = w.name;
     // nähe always has its sound: start it right in the click, so phones allow it
-    if (w.ton) t.addEventListener("click", () => { if (!on) startTon(); });
+    if (w.ton) t.addEventListener("click", () => { if (ctx) ctx.resume(); if (!on) startTon(); });
     if (w.heart) t.addEventListener("click", () => heartCtx().c.resume());
     // the tab you are already on: no hash change happens, so start the page again ourselves
     t.addEventListener("click", () => { if ((location.hash.slice(1) || "home") === w.id && panel.hidden) open(w, true); });
@@ -351,7 +355,7 @@
     if (current === w && !force && !parked) return;
     current = w; parked = false; here = w.id; worldMix = w.mix; duck = false; level = 1;
     frame.style.transition = "none"; frame.style.opacity = 0;
-    frame.src = `welten/${w.file}.html?v=20261127z`;
+    frame.src = `welten/${w.file}.html?v=20261128a`;
     tabs.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.id === w.id));
     document.title = w.id === "home" ? "letters — eine ahnung von dir" : `letters — ${w.name}`;
     spark("kratzen");
@@ -408,5 +412,5 @@
   addEventListener("hashchange", route);
   route();
   // for checking: what the cosmos is doing right now (sound, heartbeat, which page)
-  window.kosmosState = () => ({ page: current?.id, panel: !panel.hidden, ton: on, heart: heartWant, heartGain: heart ? +heart.g.gain.value.toFixed(3) : 0, voice: voice?.id || null, frame: frame.getAttribute("src") });
+  window.kosmosState = () => ({ page: current?.id, panel: !panel.hidden, ton: on, level: +level.toFixed(3), duck, heart: heartWant, heartGain: heart ? +heart.g.gain.value.toFixed(3) : 0, voice: voice?.id || null, frame: frame.getAttribute("src") });
 })();
