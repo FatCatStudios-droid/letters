@@ -150,3 +150,4 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 
 /* the association's logo where its name stands */
 .zu { display: block; height: 15px; width: auto; margin: 3px 0 6px; opacity: .9; }
+.photos.press-text { margin-top: 0; }
