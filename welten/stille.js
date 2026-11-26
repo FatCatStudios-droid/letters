@@ -61,11 +61,29 @@
     [[[0.18,0.76],[0.97,1.5],[1.58,2.72]],[[4.39,5.36],[6.15,6.6]]],   // 06
     [[[0.18,0.68],[1.8,2.58],[3.07,3.65],[3.75,4.6],[4.74,4.86]],[[6.22,8.35],[8.43,9.44]]],   // 07
   ];
-  // how far a line is typed at time t: the share of its spoken time that has passed
-  const spokenShare = (segs, t) => {
-    let done = 0, all = 0;
-    for (const [s, e] of segs) { all += e - s; done += clamp(t - s, 0, e - s); }
-    return all ? done / all : 1;
+  // how far a line is typed at time t. the words are shared out over her spoken stretches by their length,
+  // and every pause falls between two words (never inside one): "herzschlag" is typed whole, then the pause
+  const plan = (text, segs) => {
+    const len = text.length, all = segs.reduce((n, [s, e]) => n + e - s, 0) || 1;
+    const cuts = [0]; for (let i = 0; i < len; i++) if (text[i] === " ") cuts.push(i + 1); cuts.push(len);
+    let run = 0, from = 0;
+    return segs.map(([s, e], i) => {
+      run += e - s;
+      let to = len;
+      if (i < segs.length - 1) {
+        const want = len * run / all;
+        to = cuts.reduce((b, c) => Math.abs(c - want) < Math.abs(b - want) ? c : b, from);
+        to = Math.max(from, to);
+      }
+      const seg = { s, e, from, to }; from = to; return seg;
+    });
+  };
+  const spokenShare = (l, segs, t) => {
+    const text = l._full ?? l.textContent;
+    l._plan ||= plan(text, segs);
+    let k = 0;
+    for (const p of l._plan) { if (t >= p.s) k = p.from + (p.to - p.from) * clamp((t - p.s) / (p.e - p.s)); }
+    return text.length ? k / text.length : 1;
   };
   // typewriter: the typed part shows, the rest keeps its place invisibly (so nothing jumps while it types)
   const typeTo = (l, f) => {
@@ -107,7 +125,7 @@
     const t = (now - speaking.t0) / 1000;
     speaking.lines.forEach((l, i) => {
       const [a, b] = speaking.at[i] || [0, 1], segs = speaking.spoken?.[i];
-      if (t >= a) typeTo(l, segs ? spokenShare(segs, t) : (t - a) / (b - a));
+      if (t >= a) typeTo(l, segs ? spokenShare(l, segs, t) : (t - a) / (b - a));
     });
     const r = speaking.el.getBoundingClientRect();
     if (r.bottom < innerHeight * .1 || r.top > innerHeight * .9) {
