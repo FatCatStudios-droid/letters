@@ -207,7 +207,7 @@
     tippBuf ||= fetch("audio/tipp.m4a?v=20261126b").then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b)).catch(() => null);
     const me = { id }; voice = me;
     let buf;
-    try { buf = await (voiceBufs[id] ||= fetch(`audio/${id}.m4a?v=20261127b`).then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b))); }
+    try { buf = await (voiceBufs[id] ||= fetch(`audio/${id}.m4a?v=20261127d`).then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b))); }
     catch { if (voice === me) voice = null; return; }
     if (voice !== me) return;
     const s = h.c.createBufferSource(); s.buffer = buf;
@@ -329,6 +329,8 @@
     // nähe always has its sound: start it right in the click, so phones allow it
     if (w.ton) t.addEventListener("click", () => { if (!on) startTon(); });
     if (w.heart) t.addEventListener("click", () => heartCtx().c.resume());
+    // the tab you are already on: no hash change happens, so start the page again ourselves
+    t.addEventListener("click", () => { if ((location.hash.slice(1) || "home") === w.id && panel.hidden) open(w, true); });
     tabs.appendChild(t);
   });
 
@@ -341,12 +343,13 @@
   }));
 
   /* ---------- routing: #home #naehe #stille load a page; #stueck … open the info sheet ---------- */
-  let current = null;
-  const open = w => {
-    if (current === w) return;
-    current = w; here = w.id; worldMix = w.mix; duck = false; level = 1;
+  let current = null, parked = false;     // parked: the page was put away while über / journal / kontakt is open
+  // every visit to a tab starts its page fresh, with its own sound rules — whatever was open before
+  const open = (w, force) => {
+    if (current === w && !force && !parked) return;
+    current = w; parked = false; here = w.id; worldMix = w.mix; duck = false; level = 1;
     frame.style.transition = "none"; frame.style.opacity = 0;
-    frame.src = `welten/${w.file}.html?v=20261127b`;
+    frame.src = `welten/${w.file}.html?v=20261127c`;
     tabs.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.id === w.id));
     document.title = w.id === "home" ? "letters — eine ahnung von dir" : `letters — ${w.name}`;
     spark("kratzen");
@@ -373,10 +376,13 @@
     // only one thing is ever gold: an open top link switches the page tab off, closing it switches it back on
     const showTab = () => tabs.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", !group && t.dataset.id === (current && current.id)));
     if (group) {
-      if (!current) open(WORLDS[0]);
+      if (!current) current = WORLDS[0];
       panel.hidden = false; here = "info"; worldMix = INFO_MIX;
       panel.dataset.group = group;
-      setHeart(0); stopVoice();                     // über / journal / kontakt: heartbeat and voice fade out
+      // über / journal / kontakt are quiet: the page underneath is put away (its films, voices and music stop),
+      // the background sound, heartbeat and voice fade out. going back starts that page fresh
+      setHeart(0); stopVoice(); if (on || want) stopTon();
+      if (!parked) { parked = true; frame.src = "about:blank"; }
       panel.querySelectorAll(".sheet").forEach(s => s.hidden = s.dataset.group !== group);
       requestAnimationFrame(() => {
         if (id === group) panel.scrollTop = 0;
@@ -385,7 +391,7 @@
     } else {
       panel.hidden = true;
       const w = WORLDS.find(x => x.id === id) || WORLDS[0];
-      if (current === w) { here = w.id; worldMix = w.mix; if (w.heart) setHeart(heartPage ? 1 : 0); } else open(w);
+      open(w);
     }
     showTab();
     applyMix();
@@ -397,4 +403,6 @@
   });
   addEventListener("hashchange", route);
   route();
+  // for checking: what the cosmos is doing right now (sound, heartbeat, which page)
+  window.kosmosState = () => ({ page: current?.id, panel: !panel.hidden, ton: on, heart: heartWant, voice: voice?.id || null, frame: frame.getAttribute("src") });
 })();
