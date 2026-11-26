@@ -58,11 +58,14 @@
     }
     const k = Math.round(l._full.length * clamp(f));
     if (l._k === k) return;
+    const prevK = l._k || 0;
     // one key strike per new letter (not for spaces, not when a whole line appears at once)
     if (k > (l._k || 0) && k - (l._k || 0) < 4 && l._full[k - 1].trim()) kosmos.send({ tipp: 1 });
     l._k = k; l._a.textContent = l._full.slice(0, k); l._b.textContent = l._full.slice(k);
     l.classList.add("on", "typed");
     l.classList.toggle("typing", k > 0 && k < l._full.length);
+    // line finished: the carriage returns (only when another line follows)
+    if (k === l._full.length && !l._ret && l.nextElementSibling?.classList.contains("s")) { l._ret = 1; if (f < 1.5 && prevK > 0) kosmos.send({ zeile: 1 }); }
   };
   let speaking = null;           // { id, el, lines, at, t0 }
   const speak = (n, el, lines) => {

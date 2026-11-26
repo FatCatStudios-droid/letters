@@ -203,7 +203,8 @@
     if (voice?.id === id) return;
     stopVoice(1.8);
     const h = heartCtx(); h.c.resume();
-    tippBuf ||= fetch("audio/tipp.m4a?v=20261126").then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b)).catch(() => null);
+    zeileBuf ||= fetch("audio/zeile.m4a?v=20261126b").then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b)).catch(() => null);
+    tippBuf ||= fetch("audio/tipp.m4a?v=20261126b").then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b)).catch(() => null);
     const me = { id }; voice = me;
     let buf;
     try { buf = await (voiceBufs[id] ||= fetch(`audio/${id}.m4a?v=20261126`).then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b))); }
@@ -219,14 +220,24 @@
     duckHeart(true);
   };
 
-  /* typewriter: each letter typed on the stille page strikes one key (splice "typewriters and typing", cut into
-     14 single strikes, one every 0.15 s in tipp.m4a). quiet, slightly varied, never twice the same in a row */
-  const TIPP_LEVEL = .16, TIPP_N = 14, TIPP_SLOT = .15;
-  let tippBuf = null, tippLast = -1;
+  /* typewriter: each letter typed on the stille page strikes one key (splice typewriter keystrokes, cut into
+     20 single strikes, one every 0.15 s in tipp.m4a). quiet, slightly varied, never twice the same in a row.
+     at the end of a line the carriage return sounds (zeile.m4a) */
+  const TIPP_LEVEL = .16, TIPP_N = 20, TIPP_SLOT = .15, ZEILE_LEVEL = .2;
+  let tippBuf = null, tippLast = -1, zeileBuf = null;
+  const zeile = () => {
+    if (!heart || heartWant !== 1 && !voice) return;
+    const c = heart.c;
+    (zeileBuf ||= fetch("audio/zeile.m4a?v=20261126b").then(r => r.arrayBuffer()).then(b => c.decodeAudioData(b)).catch(() => null)).then(buf => {
+      if (!buf) return;
+      const s = c.createBufferSource(), g = c.createGain();
+      s.buffer = buf; g.gain.value = ZEILE_LEVEL; s.connect(g); g.connect(c.destination); s.start();
+    });
+  };
   const tipp = () => {
     if (!heart || heartWant !== 1 && !voice) return;
     const c = heart.c;
-    if (!tippBuf) { tippBuf = fetch("audio/tipp.m4a?v=20261126").then(r => r.arrayBuffer()).then(b => c.decodeAudioData(b)).catch(() => null); return; }
+    if (!tippBuf) { tippBuf = fetch("audio/tipp.m4a?v=20261126b").then(r => r.arrayBuffer()).then(b => c.decodeAudioData(b)).catch(() => null); return; }
     tippBuf.then(buf => {
       if (!buf) return;
       let i; do i = Math.floor(Math.random() * TIPP_N); while (i === tippLast); tippLast = i;
@@ -301,6 +312,7 @@
     if (d.scrub && on && here === "naehe") onScrub(d.scrub);
     if ("heart" in d && current?.heart) { heartPage = !!d.heart; if (panel.hidden) setHeart(heartPage ? 1 : 0); }
     if (d.tipp && current?.heart && panel.hidden) tipp();
+    if (d.zeile && current?.heart && panel.hidden) zeile();
     if ("voice" in d && current?.heart) { if (/^stille-\d$/.test(d.voice) && panel.hidden) playVoice(d.voice); else stopVoice(); }
     applyMix();
   });
@@ -334,7 +346,7 @@
     if (current === w) return;
     current = w; here = w.id; worldMix = w.mix; duck = false; level = 1;
     frame.style.transition = "none"; frame.style.opacity = 0;
-    frame.src = `welten/${w.file}.html?v=20261126w`;
+    frame.src = `welten/${w.file}.html?v=20261126x`;
     tabs.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.id === w.id));
     document.title = w.id === "home" ? "letters — eine ahnung von dir" : `letters — ${w.name}`;
     spark("kratzen");
