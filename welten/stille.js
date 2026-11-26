@@ -65,7 +65,8 @@
   // and every pause falls between two words (never inside one): "herzschlag" is typed whole, then the pause
   // where we know better than the measurement: after which letter a pause falls (letter count, per recording and line).
   // eröffnung, last line: "und" · pause · "eine ahnung von dir."
-  const CUTS = { "0-3": [4] };
+  // brief 01, last line: "aber" · "ich versuche es trotzdem … und" · pause · "schreibe dir."
+  const CUTS = { "0-3": [4], "1-2": [5, 36] };
   const plan = (text, segs, fixed = []) => {
     const len = text.length, all = segs.reduce((n, [s, e]) => n + e - s, 0) || 1;
     const cuts = [0]; for (let i = 0; i < len; i++) if (text[i] === " ") cuts.push(i + 1); cuts.push(len);
