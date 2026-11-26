@@ -99,6 +99,9 @@
     return r.top < innerHeight * .8 && r.bottom > innerHeight * .15;
   };
 
+  // the sign to scroll on waits until the opening is complete and no letter is being read
+  kosmos.scrollReady = () => name.classList.contains("on") && !speaking && hint.style.opacity === "0";
+
   const sec = document.querySelector(".sec");
   const fmt = s => {
     s = Math.floor(s);
