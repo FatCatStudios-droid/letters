@@ -222,6 +222,37 @@
     duckHeart(true);
   };
 
+  /* ---------- stille: a piano loop for each letter ----------
+     piano-1 … 7 (letters 2, 4 and 6 run backwards, cut beforehand). it starts with the letter's voice and keeps
+     looping under it; when the next letter begins, the old loop sounds on and fades out over 5 s while the new one
+     starts. leaving stille fades it out the same way. it plays in the heartbeat's context, like the voice. */
+  const PIANO_LEVEL = .8, PIANO_OUT = 5, PIANO_IN = .6;
+  const pianoBufs = {};
+  let piano = null;
+  const stopPiano = (out = PIANO_OUT) => {
+    const p = piano; if (!p) return;
+    piano = null;
+    if (!p.g) return;                                 // still loading: it never starts
+    const now = heart.c.currentTime;
+    hold(p.g.gain, now); p.g.gain.setValueAtTime(p.g.gain.value, now); p.g.gain.linearRampToValueAtTime(0, now + out);
+    setTimeout(() => { try { p.src.stop(); } catch {} }, out * 1000 + 300);
+  };
+  const playPiano = async n => {
+    if (piano?.n === n) return;
+    stopPiano();
+    const h = heartCtx(); h.c.resume();
+    const me = { n }; piano = me;
+    let buf;
+    try { buf = await (pianoBufs[n] ||= fetch(`audio/piano-${n}.m4a?v=20261128b`).then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b))); }
+    catch { if (piano === me) piano = null; return; }
+    if (piano !== me) return;
+    const src = h.c.createBufferSource(); src.buffer = buf; src.loop = true;
+    const g = h.c.createGain(); g.gain.value = 0; src.connect(g); g.connect(h.c.destination);
+    const now = h.c.currentTime;
+    g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(PIANO_LEVEL, now + PIANO_IN);
+    src.start(now); me.src = src; me.g = g;
+  };
+
   /* typewriter: each letter typed on the stille page strikes one key (splice typewriter keystrokes, cut into
      20 single strikes, one every 0.15 s in tipp.m4a). quiet, slightly varied, never twice the same in a row.
      at the end of a line the carriage return sounds (zeile.m4a) */
@@ -319,7 +350,10 @@
     if ("heart" in d && current?.heart) { heartPage = !!d.heart; if (panel.hidden) setHeart(heartPage ? 1 : 0); }
     if (d.tipp && current?.heart && panel.hidden) tipp();
     if (d.zeile && current?.heart && panel.hidden) zeile();
-    if ("voice" in d && current?.heart) { if (/^stille-\d$/.test(d.voice) && panel.hidden) playVoice(d.voice); else stopVoice(); }
+    if ("voice" in d && current?.heart) {
+      if (/^stille-\d$/.test(d.voice) && panel.hidden) { playVoice(d.voice); const n = +d.voice.slice(7); if (n >= 1) playPiano(n); }
+      else stopVoice();                               // the letter left the screen: the voice fades, its piano keeps looping
+    }
     applyMix();
   });
 
@@ -355,14 +389,14 @@
     if (current === w && !force && !parked) return;
     current = w; parked = false; here = w.id; worldMix = w.mix; duck = false; level = 1;
     frame.style.transition = "none"; frame.style.opacity = 0;
-    frame.src = `welten/${w.file}.html?v=20261128a`;
+    frame.src = `welten/${w.file}.html?v=20261128b`;
     tabs.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.id === w.id));
     document.title = w.id === "home" ? "letters — eine ahnung von dir" : `letters — ${w.name}`;
     spark("kratzen");
     // sound is on by itself only in nähe; every other page starts silent
     if (w.ton) startTon(); else if (on || want) stopTon();
     // a voice never outlives its page, also when the same tab is tapped again and stille starts over
-    stopVoice(1);
+    stopVoice(1); stopPiano();
     // the heartbeat belongs to stille only: arriving starts its slow fade-in, leaving fades it out
     if (w.heart) { heartPage = true; setHeart(1); } else setHeart(0);
   };
@@ -389,7 +423,7 @@
       panel.dataset.group = group;
       // über / journal / kontakt are quiet: the page underneath is put away (its films, voices and music stop),
       // the background sound, heartbeat and voice fade out. going back starts that page fresh
-      setHeart(0); stopVoice(); if (on || want) stopTon();
+      setHeart(0); stopVoice(); stopPiano(); if (on || want) stopTon();
       if (!parked) { parked = true; frame.src = "about:blank"; }
       panel.querySelectorAll(".sheet").forEach(s => s.hidden = s.dataset.group !== group);
       requestAnimationFrame(() => {
@@ -412,5 +446,5 @@
   addEventListener("hashchange", route);
   route();
   // for checking: what the cosmos is doing right now (sound, heartbeat, which page)
-  window.kosmosState = () => ({ page: current?.id, panel: !panel.hidden, ton: on, level: +level.toFixed(3), duck, heart: heartWant, heartGain: heart ? +heart.g.gain.value.toFixed(3) : 0, voice: voice?.id || null, frame: frame.getAttribute("src") });
+  window.kosmosState = () => ({ page: current?.id, panel: !panel.hidden, ton: on, level: +level.toFixed(3), duck, heart: heartWant, heartGain: heart ? +heart.g.gain.value.toFixed(3) : 0, voice: voice?.id || null, piano: piano?.n || null, frame: frame.getAttribute("src") });
 })();
