@@ -21,21 +21,22 @@ window.kosmos = (() => {
   };
 })();
 
-/* a quiet sign that the page goes on: a thin arrow in the lower right corner, away from pictures and performance, gently sinking.
+/* a quiet sign that the page goes on: a thin arrow in the lower left corner, away from pictures and performance, gently sinking.
    it appears only after a few seconds without scrolling, only while there is more below, and leaves as soon
    as you scroll. a page can hold it back while something is still happening (kosmos.scrollReady). */
 (() => {
   const css = document.createElement("style");
   css.textContent = `
-    .weiter { position: fixed; right: clamp(14px, 2vw, 28px); bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 4;
-      width: 14px; height: 22px; color: #efebe6; pointer-events: none; opacity: 0; transition: opacity 1.4s ease;
+    .weiter { position: fixed; left: clamp(14px, 2vw, 28px); bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 4;
+      width: 22px; height: 70px; color: #efebe6; pointer-events: none; opacity: 0; transition: opacity 1.4s ease;
       mix-blend-mode: difference; }   /* light on dark pages, dark on light and gold ones */
-    .weiter.on { opacity: .6; }
-    .weiter svg { display: block; width: 100%; height: 100%; animation: weiter 2.8s ease-in-out infinite; }
-    @keyframes weiter { 0%, 100% { transform: translateY(-2px); } 50% { transform: translateY(3px); } }
-    @media (prefers-reduced-motion: reduce) { .weiter svg { animation: none; } }`;
+    .weiter.on { opacity: 1; }
+    .weiter svg { display: block; width: 100%; height: 100%; animation: weiter 3.2s ease-in-out infinite; }
+    /* it breathes: fades in while sinking a little, fades out again */
+    @keyframes weiter { 0% { transform: translateY(-4px); opacity: 0; } 45% { opacity: .75; } 70% { transform: translateY(4px); opacity: .75; } 100% { transform: translateY(6px); opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .weiter svg { animation: none; opacity: .6; } }`;
   const el = document.createElement("div");
-  el.className = "weiter"; el.setAttribute("aria-hidden", "true"); el.innerHTML = '<svg viewBox="0 0 14 22" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 1v19M1.5 14.5 7 20l5.5-5.5"/></svg>';
+  el.className = "weiter"; el.setAttribute("aria-hidden", "true"); el.innerHTML = '<svg viewBox="0 0 22 70" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11 1v67M2 59l9 9 9-9"/></svg>';
   let last = performance.now();
   const moved = () => { last = performance.now(); el.classList.remove("on"); };
   ["scroll", "wheel", "touchmove", "keydown"].forEach(ev => addEventListener(ev, moved, { passive: true }));
