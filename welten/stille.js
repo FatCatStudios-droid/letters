@@ -63,14 +63,18 @@
   ];
   // how far a line is typed at time t. the words are shared out over her spoken stretches by their length,
   // and every pause falls between two words (never inside one): "herzschlag" is typed whole, then the pause
-  const plan = (text, segs) => {
+  // where we know better than the measurement: after which letter a pause falls (letter count, per recording and line).
+  // eröffnung, last line: "und" · pause · "eine ahnung von dir."
+  const CUTS = { "0-3": [4] };
+  const plan = (text, segs, fixed = []) => {
     const len = text.length, all = segs.reduce((n, [s, e]) => n + e - s, 0) || 1;
     const cuts = [0]; for (let i = 0; i < len; i++) if (text[i] === " ") cuts.push(i + 1); cuts.push(len);
     let run = 0, from = 0;
     return segs.map(([s, e], i) => {
       run += e - s;
       let to = len;
-      if (i < segs.length - 1) {
+      if (i < fixed.length) to = Math.max(from, Math.min(len, fixed[i]));
+      else if (i < segs.length - 1) {
         const want = len * run / all;
         to = cuts.reduce((b, c) => Math.abs(c - want) < Math.abs(b - want) ? c : b, from);
         to = Math.max(from, to);
@@ -80,7 +84,7 @@
   };
   const spokenShare = (l, segs, t) => {
     const text = l._full ?? l.textContent;
-    l._plan ||= plan(text, segs);
+    l._plan ||= plan(text, segs, CUTS[speaking.id.slice(7) + "-" + speaking.lines.indexOf(l)]);
     let k = 0;
     for (const p of l._plan) { if (t >= p.s) k = p.from + (p.to - p.from) * clamp((t - p.s) / (p.e - p.s)); }
     return text.length ? k / text.length : 1;
