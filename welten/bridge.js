@@ -21,25 +21,21 @@ window.kosmos = (() => {
   };
 })();
 
-/* a quiet sign that the page goes on: a thin gold line at the bottom with a small point gliding down it.
+/* a quiet sign that the page goes on: a thin arrow in the lower right corner, away from pictures and performance, gently sinking.
    it appears only after a few seconds without scrolling, only while there is more below, and leaves as soon
    as you scroll. a page can hold it back while something is still happening (kosmos.scrollReady). */
 (() => {
   const css = document.createElement("style");
   css.textContent = `
-    .weiter { position: fixed; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 4; transform: translateX(-50%);
-      display: flex; align-items: center; gap: 9px; padding: 6px 13px 6px 14px; border-radius: 999px;
-      background: rgba(11,11,11,.55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-      color: #efebe6; font: 400 11px/1 "Inter Tight", "Helvetica Neue", Arial, sans-serif; letter-spacing: .04em;
-      pointer-events: none; opacity: 0; transition: opacity 1.2s ease; }
-    .weiter.on { opacity: 1; }
-    .weiter i { position: relative; width: 1px; height: 16px; background: rgba(200,165,100,.5); }
-    .weiter i::after { content: ""; position: absolute; left: -2px; top: 0; width: 5px; height: 5px; border-radius: 50%;
-      background: #c8a564; animation: weiter 2.4s cubic-bezier(.45,0,.35,1) infinite; }
-    @keyframes weiter { 0% { transform: translateY(-2px); opacity: 0; } 20%, 75% { opacity: 1; } 100% { transform: translateY(13px); opacity: 0; } }
-    @media (prefers-reduced-motion: reduce) { .weiter i::after { animation: none; top: auto; bottom: 0; } }`;
+    .weiter { position: fixed; right: clamp(14px, 2vw, 28px); bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 4;
+      width: 14px; height: 22px; color: #efebe6; pointer-events: none; opacity: 0; transition: opacity 1.4s ease;
+      mix-blend-mode: difference; }   /* light on dark pages, dark on light and gold ones */
+    .weiter.on { opacity: .6; }
+    .weiter svg { display: block; width: 100%; height: 100%; animation: weiter 2.8s ease-in-out infinite; }
+    @keyframes weiter { 0%, 100% { transform: translateY(-2px); } 50% { transform: translateY(3px); } }
+    @media (prefers-reduced-motion: reduce) { .weiter svg { animation: none; } }`;
   const el = document.createElement("div");
-  el.className = "weiter"; el.setAttribute("aria-hidden", "true"); el.innerHTML = "weiter <i></i>";
+  el.className = "weiter"; el.setAttribute("aria-hidden", "true"); el.innerHTML = '<svg viewBox="0 0 14 22" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 1v19M1.5 14.5 7 20l5.5-5.5"/></svg>';
   let last = performance.now();
   const moved = () => { last = performance.now(); el.classList.remove("on"); };
   ["scroll", "wheel", "touchmove", "keydown"].forEach(ev => addEventListener(ev, moved, { passive: true }));
