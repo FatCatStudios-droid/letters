@@ -20,7 +20,7 @@
     col.onSnapshot(s => { notes = s.docs.map(d => ({ id: d.id, ...d.data() })); marks(); }, () => {});
     return true;
   };
-  /* the team link (…/kosmos/?notizen=<address, base64>) turns notes on for people anywhere, without any account:
+  /* the team link (…/letters/?notizen=<address, base64>) turns notes on for people anywhere, without any account:
      a note becomes a ready-made e-mail in their own mail app. the address only lives in that link, never in the code. */
   const mailTo = () => {
     const v = new URLSearchParams(location.search).get("notizen"); if (!v) return "";

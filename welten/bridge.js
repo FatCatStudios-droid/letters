@@ -1,4 +1,4 @@
-// Connects a world to the cosmos around it (kosmos/index.html).
+// Connects a world to the cosmos around it (index.html).
 // Opened on its own, every call here simply does nothing.
 window.kosmos = (() => {
   const inside = window.parent !== window;
