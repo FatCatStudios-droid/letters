@@ -119,6 +119,7 @@
   // a face shows only while the pointer is really over a name; scrolling, leaving the list or the page hides it
   let px = -1, py = -1;
   const place = () => {
+    if (!follow) return;
     const li = px < 0 ? null : document.elementFromPoint(px, py)?.closest(".names li");
     if (li && li.dataset.img) {
       if (follow.getAttribute("src") !== li.dataset.img) follow.src = li.dataset.img;

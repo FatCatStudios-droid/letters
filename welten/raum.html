@@ -95,7 +95,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   <button class="stopall" type="button" hidden>alles stoppen</button>
 </div>
 
-<script src="bridge.js?v=20261128h"></script>
+<script src="bridge.js?v=20261128i"></script>
 <script>
 (() => {
   const wide = innerWidth >= 700;
@@ -304,7 +304,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
     room.appendChild(b); c.el = b;
     if (c.kind === "dance") {
       const v = document.createElement("video");
-      v.className = "film"; v.src = `../video/${c.src}.mp4?v=20261128h`; v.muted = true; v.loop = true; v.playsInline = true; v.preload = "auto";
+      v.className = "film"; v.src = `../video/${c.src}.mp4?v=20261128i`; v.muted = true; v.loop = true; v.playsInline = true; v.preload = "auto";
       const [x, y, w, h] = c.at;
       Object.assign(v.style, { left: x + "%", top: y + "%", width: w + "%", height: h + "%" });
       room.insertBefore(v, room.querySelector(".title"));
