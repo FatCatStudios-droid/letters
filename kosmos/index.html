@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>letters — eine ahnung von dir</title>
+<link rel="icon" type="image/png" href="img/icon-64.png">
+<link rel="apple-touch-icon" href="img/icon-180.png">
+<meta name="description" content="letters — eine ahnung von dir. Ein immersives Bühnenstück in sieben Briefen. Dorothea Buchegger (Text), Akino Distelberger (Tanz), Christian Heidenbauer (Musik).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kosmos.css?v=20261125zp">
+</head>
+<body>
+
+<!-- row 1: über · journal · kontakt, always reachable. row 2: the pages as tabs -->
+<header class="bar">
+  <div class="row1">
+    <a href="#ueber" class="top t-ueber">über</a>
+    <a href="#journal" class="top t-journal">journal</a>
+    <span class="ctl">
+      <span class="meters" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <button id="ton" aria-pressed="false" hidden>ton: aus</button>
+      <a href="#kontakt" class="top t-kontakt">kontakt</a>
+    </span>
+  </div>
+  <nav class="tabs" aria-label="seiten"></nav>
+</header>
+
+<!-- the page lives here; the sound keeps running between pages -->
+<iframe class="world" id="world" title="seite"></iframe>
+
+<!-- information: a sheet over the page, opened from the links above -->
+<main class="panel" id="panel" hidden>
+  <div class="sheettop">
+    <nav class="sheetnav" aria-label="über"><a href="#stueck">stück</a><a href="#ensemble">ensemble</a><a href="#presse">presse</a></nav>
+    <a href="#" class="close" id="close">schließen ×</a>
+  </div>
+
+  <section class="sheet" id="stueck" data-group="ueber">
+    <h2 class="lbl">das stück</h2>
+    <div class="txt">
+      <p class="lead">sieben briefe an ein du, das es vielleicht noch nicht gibt.</p>
+      <p>dorothea buchegger schreibt und spricht briefe von der ersten ahnung über zweifel und sehnsucht bis zum loslassen. akino distelberger antwortet mit tanz. christian heidenbauer hält den raum mit einer kanister-gitarre von resistruments, gebaut in kyjiw aus kriegsschrott, und mit elektronischen klangflächen.</p>
+      <p>sprache, tanz und musik stehen nicht nebeneinander, sie gehen ineinander über. das publikum sitzt nicht davor, sondern mittendrin.</p>
+    </div>
+    <dl class="spec">
+      <div><dt>text, konzept, stimme</dt><dd>dorothea buchegger</dd></div>
+      <div><dt>tanz, choreografie</dt><dd>akino distelberger</dd></div>
+      <div><dt>musik</dt><dd>christian heidenbauer</dd></div>
+      <div><dt>instrument</dt><dd>kanister-gitarre, resistruments (ua)</dd></div>
+      <div><dt>format</dt><dd>immersives bühnenstück, sieben briefe</dd></div>
+      <div><dt>sprache</dt><dd>deutsch</dd></div>
+      <div><dt>termine</dt><dd>noch keine — anfragen willkommen</dd></div>
+    </dl>
+  </section>
+
+  <section class="sheet" id="ensemble" data-group="ueber">
+    <h2 class="lbl">ensemble</h2>
+    <div class="people">
+      <article>
+        <img src="img/portrait-dorothea.jpg" alt="Dorothea Buchegger am Mikrofon" loading="lazy">
+        <h3>dorothea buchegger<span>text, konzept, stimme</span></h3>
+        <p>lebt in wieselburg, grafik- und kommunikationsdesignerin, seit ihrer jugend künstlerisch tätig. seit 2024 als poetry slammerin auf über 50 bühnen in österreich, u. a. beim ö-slam in klagenfurt, im dschungel wien und im wien museum. 2025 das interdisziplinäre projekt „resonanzen – bild in wort und ton“. „letters – eine ahnung von dir“ ist ihr erstes eigenes bühnenstück.</p>
+      </article>
+      <article>
+        <img src="img/portrait-akino.jpg" alt="Akino Distelberger, Porträt" loading="lazy">
+        <h3>akino distelberger<span>tanz, choreografie</span></h3>
+        <p>choreografin, tänzerin und pädagogin aus wieselburg. studium zeitgenössischer tanz an der muk wien und der msgsü istanbul, traditionelle japanische tanzausbildung in sapporo und nagoya. arbeiten u. a. mit hubert lepka, anton lachky und derrick ryan claude mitchell (impulstanz 2024). eigene stücke, zuletzt „zu grund und boden“ (2022) und „hanna und die bohnenranke“ (2024), gezeigt u. a. beim viertelfestival niederösterreich.</p>
+      </article>
+      <article>
+        <img src="img/portrait-christian.jpg" alt="Christian Heidenbauer, Porträt" loading="lazy">
+        <small class="ph">foto: daniel domig</small>
+        <h3>christian heidenbauer<span>musik, kanister-gitarre</span></h3>
+        <p>gitarrist, produzent und musikalischer leiter aus österreich, studium popularmusik (ipop) an der mdw wien. seit über zehn jahren auf bühnen in ganz europa und in zahlreichen studioproduktionen. mit dem cellisten christof unterberger bildet er das duo pars momentum.</p>
+        <p class="links"><a href="https://christianheidenbauer.com" target="_blank" rel="noopener">christianheidenbauer.com ↗</a> <a href="https://parsmomentum.com" target="_blank" rel="noopener">pars momentum ↗</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section class="sheet" id="presse" data-group="ueber">
+    <h2 class="lbl">presse</h2>
+    <div class="txt">
+      <h3 class="sub">pressetext</h3>
+      <p id="pressetext">„letters – eine ahnung von dir“ ist ein immersives bühnenstück in sieben briefen. die autorin und poetry slammerin dorothea buchegger schreibt an ein du, das es vielleicht noch nicht gibt: von der ersten ahnung über zweifel und sehnsucht bis zum loslassen. die choreografin akino distelberger antwortet mit tanz, der gitarrist christian heidenbauer mit einer kanister-gitarre von resistruments, gebaut in kyjiw aus kriegsschrott, und mit elektronischen klangflächen. sprache, tanz und musik stehen nicht nebeneinander, sie gehen ineinander über. das publikum sitzt nicht davor, sondern mittendrin.</p>
+      <button class="copy" data-target="pressetext">pressetext kopieren</button>
+    </div>
+    <div class="photos">
+      <h3 class="sub">pressefotos</h3>
+      <ul>
+        <li><a href="presse/dorothea-buchegger.jpg" download>dorothea buchegger <span>jpg, hochformat</span></a></li>
+        <li><a href="presse/akino-distelberger.jpg" download>akino distelberger <span>jpg, querformat</span></a></li>
+        <li><a href="presse/akino-distelberger-tanz.jpg" download>akino distelberger, tanz <span>jpg, querformat</span></a></li>
+        <li><a href="presse/christian-heidenbauer.jpg" download>christian heidenbauer <span>jpg, querformat</span></a></li>
+        <li><a href="presse/letters-logo.pdf" download>logo <span>pdf, vektor</span></a></li>
+      </ul>
+      <p class="credit">fotonachweis und weiteres material auf anfrage.</p>
+    </div>
+  </section>
+
+  <section class="sheet journal" id="journal" data-group="journal">
+    <h2 class="lbl">journal</h2>
+    <div class="txt">
+      <p class="lead">was bei letters geschieht – termine, proben, begegnungen. der reihe nach.</p>
+      <!-- entries, newest first:
+      <ol class="chron">
+        <li><time datetime="2026-12-01">01.12.2026</time><p>…</p></li>
+      </ol> -->
+      <p class="empty">noch keine einträge. die ersten termine folgen.</p>
+    </div>
+  </section>
+
+  <section class="sheet contact" id="kontakt" data-group="kontakt">
+    <h2 class="lbl">kontakt</h2>
+    <div>
+      <p class="mail"><a href="mailto:hallo@letters-stueck.at?subject=letters">hallo@letters-stueck.at</a></p>
+      <p class="hint">anfragen für aufführungen, festivals, presse. termine: noch keine.</p>
+      <div class="impressum" id="impressum">
+        <h3 class="sub">impressum &amp; offenlegung</h3>
+        <dl class="spec">
+          <div><dt>medieninhaber, herausgeber</dt><dd>zwischen uns – verein für zeitgenössische kunst</dd></div>
+          <div><dt>anschrift</dt><dd class="todo">folgt</dd></div>
+          <div><dt>zvr-zahl</dt><dd class="todo">folgt</dd></div>
+          <div><dt>e-mail</dt><dd><a href="mailto:hallo@letters-stueck.at">hallo@letters-stueck.at</a></dd></div>
+          <div><dt>vertretungsbefugt</dt><dd>dorothea buchegger, obfrau</dd></div>
+          <div><dt>grundlegende richtung</dt><dd>information über das bühnenstück „letters – eine ahnung von dir“.</dd></div>
+          <div><dt>bildnachweis</dt><dd>foto christian heidenbauer: daniel domig. weitere fotonachweise folgen.</dd></div>
+          <div><dt>datenschutz</dt><dd>diese seite setzt keine cookies und keine analysewerkzeuge ein. schriften werden von google fonts geladen; dabei wird ihre ip-adresse an google übermittelt. wenn sie uns per e-mail schreiben, verwenden wir ihre angaben nur zur bearbeitung ihrer anfrage.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot"><span>letters — eine ahnung von dir</span><span>© 2026</span><a href="#impressum">impressum</a></footer>
+</main>
+
+<script src="kosmos.js?v=20261125zp"></script>
+</body>
+</html>

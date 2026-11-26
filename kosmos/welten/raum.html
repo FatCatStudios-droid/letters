@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>letters — home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* layout: a dark room in three lanes — stimme, musik, tanz. only shapes, no labels.
+   tanz plays films in the background, each in its own place, one dissolving into the next. */
+:root { --ink: #0b0b0b; --paper: #efebe6; --gold: #c8a564;
+  /* gold with a soft sheen: a narrow range of warm tones drifting very slowly, like light moving over leaf gold */
+  --sheen: linear-gradient(118deg, #b48f50 0%, #c6a262 22%, #dcc183 42%, #cfae6c 55%, #bf9a5a 74%, #ad8848 100%); --mute: rgba(239,235,230,.45); --pad: clamp(14px, 2vw, 28px); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body { background: var(--ink); color: var(--paper); font: 400 14px/1.3 "Inter Tight", "Helvetica Neue", Arial, sans-serif; overflow: hidden; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+
+.room { position: relative; width: 100%; height: 100%; overflow: hidden; }
+/* every sound shows a fragment of a picture in its own frame — never full screen */
+.frag {
+  position: absolute; z-index: 0; pointer-events: none; opacity: 0;
+  background: center / cover no-repeat; filter: grayscale(1);
+  transition: opacity 2.5s ease-in-out;
+}
+.frag.on { opacity: .55; }
+
+/* films: each one has its own place on the surface; a slow dissolve between them */
+.film {
+  position: absolute; z-index: 0; object-fit: cover; opacity: 0; pointer-events: none;
+  transition: opacity 2.8s ease-in-out;
+}
+.film.on { opacity: .62; }
+
+.title { position: absolute; left: var(--pad); top: var(--pad); z-index: 3; max-width: 420px; }
+.title h1 { font-weight: 500; font-size: clamp(40px, min(9vw, 15vh), 150px); line-height: .8; letter-spacing: -.07em; margin-left: -.05em; }
+/* the logo mark: alone on the right, level with the title */
+.mark-gold { position: absolute; right: var(--pad); top: calc(var(--pad) + 6px); z-index: 3; width: clamp(52px, 7vw, 110px); aspect-ratio: 1816 / 1256; height: auto; opacity: .92; pointer-events: none;
+  background: var(--gold) var(--sheen) 0 0 / 280% 280%; animation: sheen 19s ease-in-out infinite alternate;
+  -webkit-mask: url(../img/logo-gold.png) center / contain no-repeat; mask: url(../img/logo-gold.png) center / contain no-repeat; }
+@keyframes sheen { from { background-position: 0% 40%; } to { background-position: 100% 60%; } }
+@media (prefers-reduced-motion: reduce) { .mark-gold { animation: none; } }
+.title p { margin-top: 14px; color: var(--mute); }
+.title p b { font-weight: 400; color: var(--paper); }
+
+/* the three lanes: a word, a line, then the shapes underneath */
+.lane { position: absolute; left: 0; right: 0; height: 1px; background: rgba(239,235,230,.16); z-index: 3; }
+.lane span { position: absolute; right: var(--pad); top: 8px; z-index: 3; background: var(--ink); padding: 0 6px; margin-right: -6px; font-size: clamp(17px, 1.7vw, 24px); letter-spacing: -.01em; color: var(--mute); }
+
+.cue { position: absolute; z-index: 4; transform: translate(-50%, -50%); padding: 6px;
+  /* every shape has its own size and drifts a few pixels on its own slow path */
+  animation: drift var(--dur, 11s) ease-in-out var(--del, 0s) infinite alternate; }
+@keyframes drift { from { translate: 0 0; } to { translate: var(--dx, 6px) var(--dy, 4px); } }
+@media (prefers-reduced-motion: reduce) { .cue { animation: none; } }
+.cue .mark {
+  --p: 0; display: block; width: var(--s, 46px); height: var(--s, 46px);
+  border: 1px solid var(--paper);
+  background: conic-gradient(var(--paper) calc(var(--p) * 1turn), transparent 0);
+}
+.cue.voice .mark { border-radius: 50%; }
+.cue.music .mark { transform: rotate(45deg) scale(.82); }
+.cue:hover .mark { background-color: rgba(239,235,230,.16); }
+.cue.on .mark { border-color: var(--paper); }
+.cue.dance.on .mark { background: var(--paper); }
+.cue:focus-visible { outline: none; }
+/* giants lie under the other shapes, so the small ones they overlap stay easy to press */
+.cue.giant { z-index: 2; }
+.cue:focus-visible .mark { outline: 2px solid var(--paper); outline-offset: 3px; }
+
+.hint { position: absolute; left: var(--pad); bottom: var(--pad); z-index: 3; color: var(--mute); max-width: 60%; }
+.stopall { position: absolute; right: var(--pad); bottom: var(--pad); z-index: 3; color: var(--mute); text-decoration: underline; text-underline-offset: 3px; }
+.stopall:hover { color: var(--paper); }
+.stopall[hidden] { display: none; }
+
+@media (max-width: 760px) {
+}
+@media (prefers-reduced-motion: reduce) { .film { transition: none; } }
+/* very low windows (a phone on its side): the hint would sit on the shapes, so it steps aside */
+@media (max-height: 340px) { .hint { display: none; } }
+</style>
+</head>
+<body>
+<div class="room" id="room">
+
+  <span class="mark-gold" aria-hidden="true"></span>
+  <header class="title">
+    <h1>letters</h1>
+    <p><b>eine ahnung von dir</b><br>sieben briefe an ein du, das es vielleicht noch nicht gibt.</p>
+  </header>
+
+  <p class="hint">drück, was du hören und sehen willst.</p>
+  <button class="stopall" type="button" hidden>alles stoppen</button>
+</div>
+
+<script src="bridge.js?v=20261125zp"></script>
+<script>
+(() => {
+  const wide = innerWidth >= 700;
+  // three lanes. stimme: circles. musik: diamonds (klavier, beat, psalterium). tanz: squares that play films.
+  // vol: voices are the loudest (files normalised to -16 dB); music sits 12–15 dB below.
+  // at: the frame of the picture fragment (left, top, width, height in %), each in its own place.
+  const CUES = [
+    { src: "stimme-1",  kind: "voice", name: "stimme eins", vol: 1,   fin: 3000, img: "s-draussen", pos: "40% 35%", at: wide ? [3, 6, 28, 38]   : [0, 4, 52, 24] },
+    { src: "stimme-2",  kind: "voice", name: "stimme zwei", vol: 1,   fin: 3000, img: "s-tulln",    pos: "35% 30%", at: wide ? [14, 20, 24, 30] : [10, 14, 46, 20] },
+    { src: "stimme-3",  kind: "voice", name: "stimme drei", vol: 1,   fin: 3000, img: "s-buehne-2", pos: "55% 30%", at: wide ? [2, 30, 22, 34]  : [0, 22, 40, 22] },
+    { src: "klavier-1", kind: "music", name: "klavier",     vol: .37, fin: 3500, img: "c-klavier",  pos: "50% 40%", at: wide ? [82, 3, 18, 44]  : [54, 26, 46, 22], group: "klavier" },
+    { src: "beat-a",    kind: "music", name: "beat",        vol: .28, fin: 3500, img: "c-saal",     pos: "50% 30%", at: wide ? [84, 50, 16, 46] : [62, 46, 38, 26], group: "beat" },
+    { src: "pad-a",     kind: "music", name: "psalterium",  vol: .18, fin: 6000, img: "c-gitarre",  pos: "45% 40%", at: wide ? [40, 0, 20, 24]  : [36, 0, 30, 16] },
+    // films, each with its own place on the surface
+    { src: "rand",   kind: "dance", name: "tanz eins", at: wide ? [62, 0, 20, 100]  : [52, 0, 48, 100] },
+    { src: "fuesse", kind: "dance", name: "tanz zwei", at: wide ? [0, 50, 62, 50]   : [0, 58, 100, 42] },
+    { src: "fall",   kind: "dance", name: "tanz drei", at: wide ? [36, 4, 58, 72]   : [0, 8, 100, 56] },
+  ];
+  const LANES = [["stimme", "voice"], ["musik", "music"], ["tanz", "dance"]];
+  // scatter three shapes inside one lane: x anywhere between 8 % and 92 %, never closer than ~70 px
+  const scatter = () => {
+    const W = room.clientWidth, gap = Math.max(SMAX * .8 + 20, W * .13) / W * 100;
+    for (let tries = 0; tries < 200; tries++) {
+      const m = Math.max(8, (SMAX / 2 + 18) / W * 100);   // the biggest shape never touches the edge
+      const xs = [0, 1, 2].map(() => m + Math.random() * (100 - 2 * m)).sort((a, b) => a - b);
+      if (xs[1] - xs[0] >= gap && xs[2] - xs[1] >= gap) return xs.sort(() => Math.random() - .5);
+    }
+    return [18, 50, 82];
+  };
+
+  const room = document.getElementById("room");
+  const stopall = room.querySelector(".stopall");
+  const playing = new Map();
+  let film = null;
+
+  const lanes = LANES.map(([word]) => {
+    const l = document.createElement("div"); l.className = "lane";
+    l.innerHTML = `<span>${word}</span>`; room.appendChild(l); return l;
+  });
+  // the three lanes share whatever height is left under the title
+  const title = room.querySelector(".title");
+  const layout = () => {
+    // everything always fits the window, also a small one: no scrolling. in low windows the lanes get narrower
+    // and the shapes shrink with them (never below a size that can still be pressed)
+    const start = title.getBoundingClientRect().bottom + 20;
+    const band = Math.max(54, (room.clientHeight - 48 - start) / 3);
+    const k = Math.max(.4, Math.min(1, (band - 40) / SMAX));
+    CUES.forEach(c => { if (!c.el) return;
+      c.s = Math.round(c.size * k);
+      c.el.style.setProperty("--s", c.s + "px");
+      c.el.style.padding = Math.max(4, (44 - c.s) / 2) + "px";
+    });
+    lanes.forEach((l, i) => l.style.top = (start + i * band) + "px");
+    // keep every shape clear of its own label (just under the line) and of the next line below
+    CUES.forEach(c => {
+      if (!c.el) return;
+      // a big shape running off the right edge stays below the lane's word there
+      const r = c.s / 2 + 8, lo = Math.max(Math.min(62, band * .42), r + (c.bleed === "right" ? 40 : 14)), hi = Math.max(lo, band - r - 4);
+      // a giant taller than its lane sits in the middle of it and simply reaches across the lines
+      if (c.s + 40 > band) {
+        // …but never up into the title: the giant of the first lane starts at the first line
+        const y = c.lane === 0 ? Math.max(band * .55, c.s / 2 - 6) : band * .55;
+        c.el.style.top = (start + c.lane * band + y) + "px"; return;
+      }
+      c.el.style.top = (start + c.lane * band + Math.min(hi, Math.max(lo, band * c.dy))) + "px";
+    });
+  };
+
+  const render = () => {
+    stopall.hidden = !playing.size && !film;
+    kosmos.send({ duck: playing.size > 0 });
+  };
+
+  /* ---- the clock hand on each playing shape: redrawn every frame, so it sweeps smoothly.
+     media time only advances in steps, so between steps it is carried on by the wall clock ---- */
+  const sweep = now => {
+    for (const [c, p] of playing) {
+      const a = p.a;
+      if (!a.duration || a.paused) continue;
+      if (a.currentTime !== p.lastT) { p.lastT = a.currentTime; p.lastAt = now; }
+      const est = Math.min(a.duration, p.lastT + (now - p.lastAt) / 1000 * a.playbackRate);
+      (c.markEl ||= c.el.querySelector(".mark")).style.setProperty("--p", (est / a.duration).toFixed(4));
+    }
+    requestAnimationFrame(sweep);
+  };
+  requestAnimationFrame(sweep);
+
+  /* ---- sound: everything fades. one voice at a time — the next one takes over.
+     levels and fades run through web audio gain nodes, so they also work on iphones ---- */
+  let ctx = null;
+  const audioCtx = () => (ctx ||= new (window.AudioContext || window.webkitAudioContext)());
+  const ramp = (g, to, ms) => {
+    const t = ctx.currentTime;
+    g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t);
+    g.gain.linearRampToValueAtTime(to, t + ms / 1000);
+  };
+  const stop = (c, ms = 3500) => {
+    const p = playing.get(c); if (!p) return;
+    playing.delete(c);
+    c.el.classList.remove("on"); c.el.querySelector(".mark").style.setProperty("--p", 0);
+    c.frag.style.transitionDuration = ms + "ms"; c.frag.classList.remove("on");
+    ramp(p.g, 0, ms); setTimeout(() => p.a.pause(), ms + 50);
+    render();
+  };
+  // klavier ends whatever music was playing; beat ends the klavier; beat and psalterium sound together
+  const ENDS = { klavier: ["beat-a", "pad-a"], beat: ["klavier-1"] };
+  const play = c => {
+    audioCtx(); ctx.resume();
+    // voice over voice: a long crossfade (6 s), then the old voice is gone by itself
+    const XFADE = 6000;
+    const before = c.kind === "voice" ? [...playing.keys()].filter(o => o.kind === "voice") : [];
+    before.forEach(o => stop(o, XFADE));
+    const fin = before.length ? XFADE : c.fin;
+    if (c.group) [...playing.keys()].filter(o => (ENDS[c.group] || []).includes(o.src)).forEach(o => stop(o, 4000));
+    const a = new Audio(`../audio/${c.src}.m4a`);
+    const g = ctx.createGain(); g.gain.value = 0;
+    ctx.createMediaElementSource(a).connect(g); g.connect(ctx.destination);
+    const p = { a, g };
+    a.addEventListener("ended", () => playing.get(c) === p && stop(c, 1500));
+    a.play().catch(() => {}); playing.set(c, p);
+    ramp(g, c.vol, fin);
+    c.frag.style.transitionDuration = fin + "ms";
+    c.el.classList.add("on"); c.frag.classList.add("on");
+    render();
+  };
+
+  /* ---- films: one at a time, slow dissolve, each in its own place ---- */
+  const setFilm = c => {
+    const old = film;
+    if (old) {
+      old.el.classList.remove("on"); old.v.classList.remove("on");
+      setTimeout(() => { if (film !== old) old.v.pause(); }, 3000);
+    }
+    film = c && c !== old ? c : null;
+    if (film) {
+      film.v.currentTime = 0; film.v.play().catch(() => {});
+      requestAnimationFrame(() => film.v.classList.add("on"));
+      film.el.classList.add("on");
+    }
+    render();
+  };
+
+  // shape sizes in px: from small to big, with real contrast. every lane gets one small, one middle, one big shape
+  const SMIN = innerWidth >= 760 ? 30 : 26, SMAX = innerWidth >= 760 ? 116 : 92;
+  const SIZES = LANES.map(() => [
+    SMIN + Math.random() * 8,
+    SMIN + (SMAX - SMIN) * (.38 + Math.random() * .2),
+    SMAX - Math.random() * 10,
+  ].map(Math.round).sort(() => Math.random() - .5));
+  const XS = LANES.map(scatter);
+  // the big shape of some lanes grows and runs off the edge, so only a half, a third or two thirds of it show.
+  // on a laptop the giants are bigger still and may reach across the lines
+  const BLEED = LANES.map(() => null);
+  const wideScreen = innerWidth >= 760;
+  {
+    const W = room.clientWidth;
+    // only stimme and musik run off the edge; the squares of tanz stay whole and inside the picture
+    let lanesBleeding = LANES.map((l, i) => i < 2 && Math.random() < .55);
+    if (!lanesBleeding.some(Boolean)) lanesBleeding[Math.floor(Math.random() * 2)] = true;
+    // and the biggest tanz square is a little smaller on phones
+    if (!wideScreen) { const tz = SIZES[2], tk = tz.indexOf(Math.max(...tz)); tz[tk] = Math.min(tz[tk], 76); }
+    lanesBleeding.forEach((on, lane) => {
+      if (!on) return;
+      const sz = SIZES[lane], k = sz.indexOf(Math.max(...sz));
+      const big = Math.round(wideScreen ? 190 + Math.random() * 90 : 124 + Math.random() * 44);   // laptop 190–280 px, phone 124–168 px
+      const f = 1 / 3 + Math.random() / 3;                            // visible part: 1/3 … 2/3
+      const side = Math.random() < .5 ? "left" : "right";
+      const cx = side === "left" ? big * (f - .5) : W - big * (f - .5);
+      const [a, b] = side === "left" ? [big * f, W] : [0, W - big * f];
+      const others = [0, 1, 2].filter(i => i !== k);
+      let xs = null;
+      for (let tries = 0; tries < 200 && !xs; tries++) {
+        const p = others.map(i => a + sz[i] / 2 + 16 + Math.random() * Math.max(0, (b - a) - sz[i] - 32));
+        if (Math.abs(p[0] - p[1]) >= (sz[others[0]] + sz[others[1]]) / 2 + 28) xs = p;
+      }
+      xs ||= [a + (b - a) * .3, a + (b - a) * .75];
+      sz[k] = big;
+      XS[lane][k] = cx / W * 100;
+      others.forEach((i, j) => XS[lane][i] = xs[j] / W * 100);
+      BLEED[lane] = { k, side };
+    });
+  }
+  CUES.forEach(c => {
+    const lane = LANES.findIndex(l => l[1] === c.kind);
+    const i = CUES.filter(x => x.kind === c.kind).indexOf(c);
+    const b = document.createElement("button");
+    b.className = `cue ${c.kind}`;
+    b.style.left = XS[lane][i] + "%"; c.lane = lane;
+    c.dy = .3 + Math.random() * .5;            // a little higher or lower inside the lane
+    // its own size: big enough to tap on a phone (≥ 40 px + padding), up to almost twice that
+    c.size = SIZES[lane][i];
+    c.bleed = BLEED[lane] && BLEED[lane].k === i ? BLEED[lane].side : null;
+    if (c.bleed) b.classList.add("giant");
+    b.style.setProperty("--s", c.size + "px");
+    // small shapes get a wider invisible rim, so they are still easy to tap (≥ 48 px)
+    b.style.padding = Math.max(6, (48 - c.size) / 2) + "px";
+    b.style.setProperty("--dx", ((Math.random() < .5 ? -1 : 1) * (3 + Math.random() * 9)).toFixed(1) + "px");
+    b.style.setProperty("--dy", ((Math.random() < .5 ? -1 : 1) * (3 + Math.random() * 7)).toFixed(1) + "px");
+    b.style.setProperty("--dur", (7 + Math.random() * 9).toFixed(1) + "s");
+    b.style.setProperty("--del", (-Math.random() * 12).toFixed(1) + "s");
+    b.innerHTML = `<span class="mark"></span>`;
+    b.setAttribute("aria-label", c.name);
+    room.appendChild(b); c.el = b;
+    if (c.kind === "dance") {
+      const v = document.createElement("video");
+      v.className = "film"; v.src = `../video/${c.src}.mp4?v=20261125zp`; v.muted = true; v.loop = true; v.playsInline = true; v.preload = "auto";
+      const [x, y, w, h] = c.at;
+      Object.assign(v.style, { left: x + "%", top: y + "%", width: w + "%", height: h + "%" });
+      room.insertBefore(v, room.querySelector(".title"));
+      c.v = v;
+      b.addEventListener("click", () => setFilm(c));
+    } else {
+      const f = document.createElement("div");
+      f.className = "frag";
+      const [x, y, w, h] = c.at;
+      Object.assign(f.style, { left: x + "%", top: y + "%", width: w + "%", height: h + "%",
+        backgroundImage: `url("../img/${c.img}.jpg")`, backgroundPosition: c.pos });
+      room.insertBefore(f, room.querySelector(".title"));
+      c.frag = f;
+      b.addEventListener("click", () => playing.has(c) ? stop(c) : play(c));
+    }
+  });
+
+  layout(); addEventListener("resize", layout); document.fonts?.ready.then(layout);
+  stopall.addEventListener("click", () => { [...playing.keys()].forEach(stop); if (film) setFilm(null); });
+  addEventListener("pagehide", () => kosmos.send({ duck: false }));
+})();
+</script>
+</body>
+</html>
