@@ -179,9 +179,11 @@
     // a soft s-shaped fade (slow start, slow end) instead of a straight line
     const from = h.g.gain.value, to = v ? HEART_LEVEL : 0, dur = v ? HEART_IN : HEART_OUT;
     const curve = new Float32Array(64).map((_, i) => from + (to - from) * (1 - Math.cos(Math.PI * i / 63)) / 2);
-    h.g.gain.cancelScheduledValues(now);
-    try { h.g.gain.setValueCurveAtTime(curve, now + .01, dur); }
-    catch { h.g.gain.setValueAtTime(from, now); h.g.gain.linearRampToValueAtTime(to, now + dur); }
+    // clear everything planned, also a fade still running (safari refuses a new curve on top of a running one,
+    // and the heartbeat would then simply stay on)
+    h.g.gain.cancelScheduledValues(0);
+    try { h.g.gain.setValueAtTime(from, now); h.g.gain.setValueCurveAtTime(curve, now + .01, dur); }
+    catch { try { h.g.gain.cancelScheduledValues(0); h.g.gain.setValueAtTime(from, now); h.g.gain.linearRampToValueAtTime(to, now + dur); } catch { h.g.gain.value = to; } }
   };
 
   /* ---------- stille: dorothea reads the letters ----------
@@ -306,7 +308,7 @@
     if (d.mix) worldMix = { ...worldMix, ...d.mix };
     if ("duck" in d) duck = !!d.duck;
     if ("level" in d) level = Math.max(0, Math.min(1, +d.level));
-    if (d.startTon && !on) startTon();
+    if (d.startTon && !on && current?.ton && panel.hidden) startTon();   // only nähe may switch the sound on
     if (d.hello) tellWorld();
     if (d.spark) spark(d.spark);
     if (d.scrub && on && here === "naehe") onScrub(d.scrub);
@@ -349,14 +351,16 @@
     if (current === w && !force && !parked) return;
     current = w; parked = false; here = w.id; worldMix = w.mix; duck = false; level = 1;
     frame.style.transition = "none"; frame.style.opacity = 0;
-    frame.src = `welten/${w.file}.html?v=20261127y`;
+    frame.src = `welten/${w.file}.html?v=20261127z`;
     tabs.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.id === w.id));
     document.title = w.id === "home" ? "letters — eine ahnung von dir" : `letters — ${w.name}`;
     spark("kratzen");
     // sound is on by itself only in nähe; every other page starts silent
     if (w.ton) startTon(); else if (on || want) stopTon();
+    // a voice never outlives its page, also when the same tab is tapped again and stille starts over
+    stopVoice(1);
     // the heartbeat belongs to stille only: arriving starts its slow fade-in, leaving fades it out
-    if (w.heart) { heartPage = true; setHeart(1); } else { setHeart(0); stopVoice(); }
+    if (w.heart) { heartPage = true; setHeart(1); } else setHeart(0);
   };
   // arriving straight on nähe: browsers only allow sound after a first tap or key, so start it then
   const firstTouch = () => {
@@ -404,5 +408,5 @@
   addEventListener("hashchange", route);
   route();
   // for checking: what the cosmos is doing right now (sound, heartbeat, which page)
-  window.kosmosState = () => ({ page: current?.id, panel: !panel.hidden, ton: on, heart: heartWant, voice: voice?.id || null, frame: frame.getAttribute("src") });
+  window.kosmosState = () => ({ page: current?.id, panel: !panel.hidden, ton: on, heart: heartWant, heartGain: heart ? +heart.g.gain.value.toFixed(3) : 0, voice: voice?.id || null, frame: frame.getAttribute("src") });
 })();
