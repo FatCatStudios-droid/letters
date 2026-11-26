@@ -40,57 +40,38 @@
   // when dorothea begins and ends each line (seconds into the recording, measured in the recordings themselves):
   // each line is typed, like on a typewriter, while she speaks it
   const LINE_AT = [
-    [[.18, 2.37], [4.36, 7.32], [9.32, 13.96], [14.44, 17.32]],   // und mein herz … · als schlug … · dieser eine … · und eine ahnung von dir
-    [[.18, 3.38], [3.41, 5.35], [7.62, 11.24]],                   // 01
-    [[.18, 5.44], [6.66, 10.17]],                                 // 02
-    [[.18, 1.38], [2.40, 8.50]],                                  // 03
-    [[.18, 4.46], [4.85, 6.23], [7.98, 11.21]],                   // 04
-    [[.18, 1.30], [2.37, 7.31], [9.31, 11.66], [13.49, 18.29]],   // 05
-    [[.18, 2.90], [4.39, 6.60]],                                  // 06
-    [[.18, 4.86], [6.22, 9.45]],                                  // 07
+    [[0.18, 2.35], [4.36, 7.41], [9.31, 13.92], [14.43, 17.3]],   // eröffnung
+    [[0.18, 3.03], [3.03, 5.34], [7.62, 11.23]],   // 01
+    [[0.18, 3.95], [4.05, 10.16]],   // 02
+    [[0.18, 3.09], [5.13, 8.5]],   // 03
+    [[0.18, 3.27], [4.09, 6.22], [7.98, 11.21]],   // 04
+    [[0.18, 2.9], [3.39, 7.3], [9.31, 11.65], [13.46, 18.27]],   // 05
+    [[0.18, 2.72], [4.38, 6.68]],   // 06
+    [[0.18, 4.6], [6.22, 9.44]],   // 07
   ];
-  // when she really speaks inside each line (measured from the loudness of the recordings, 10 ms steps).
-  // the typewriter only moves while her voice sounds and rests in her pauses, so letters and words land together
-  const SPOKEN = [
-    [[[0.18,0.9],[1.02,1.29],[1.37,2.35]],[[4.36,7.31]],[[9.32,9.68],[9.76,10.17],[10.96,11.69],[12.56,13.92]],[[14.44,15.0],[15.94,16.2],[16.28,17.3]]],   // eröffnung
-    [[[0.18,1.14],[1.62,3.38]],[[3.41,4.25],[4.33,4.85],[4.98,5.34]],[[7.62,7.99],[8.21,9.66],[10.41,11.23]]],   // 01
-    [[[0.18,0.99],[1.65,5.43]],[[6.66,7.4],[9.21,10.16]]],   // 02 (set by ear)
-    [[[0.18,0.6],[0.72,1.37]],[[2.4,3.09],[5.13,6.72],[7.35,7.74],[7.88,8.5]]],   // 03
-    [[[0.18,0.91],[1.02,1.48],[2.17,3.27],[3.88,3.92],[4.09,4.46]],[[4.85,6.22]],[[7.98,9.21],[10.38,11.21]]],   // 04
-    [[[0.18,1.29]],[[2.37,2.9],[3.39,3.87],[5.42,6.5],[6.6,7.3]],[[9.31,10.42],[10.73,11.17],[11.31,11.65]],[[13.49,14.25],[16.22,16.89],[17.67,18.27]]],   // 05
-    [[[0.18,0.76],[0.97,1.5],[1.58,2.72]],[[4.39,5.36],[6.15,6.6]]],   // 06
-    [[[0.18,0.68],[1.8,2.58],[3.07,3.65],[3.75,4.6],[4.74,4.86]],[[6.22,8.35],[8.43,9.44]]],   // 07
+  // word by word, when dorothea speaks it: [letters typed once the word is done, from second, to second].
+  // made from the recordings themselves: the exact speaking stretches (loudness, 10 ms steps) and the order of her words
+  // (speech recognition, whisper), each word as long as its syllables. pauses always fall between words.
+  // eröffnung: "und" · pause · "eine ahnung von dir" and brief 04: "dich" · pause · "tief" are set by ear
+  const WORDS = [
+    [[[4,0.18,0.54],[9,0.54,0.9],[16,1.02,1.35],[20,1.35,1.69],[27,1.69,2.35]],[[4,4.36,4.61],[11,4.61,4.87],[14,4.87,5.12],[20,5.12,5.38],[24,5.38,5.63],[30,5.63,6.14],[41,6.14,6.65],[44,6.65,6.9],[51,6.9,7.41]],[[7,9.31,9.74],[12,9.74,10.17],[23,10.96,11.69],[28,12.56,12.9],[40,12.9,13.92]],[[4,14.43,15.0],[9,15.94,16.39],[16,16.39,16.85],[20,16.85,17.07],[24,17.07,17.3]]],   // eröffnung
+    [[[4,0.18,0.42],[9,0.42,0.66],[16,0.66,0.9],[20,0.9,1.14],[24,1.62,1.82],[29,1.82,2.23],[35,2.23,2.63],[42,2.63,3.03]],[[6,3.03,3.44],[10,3.44,3.64],[13,3.64,3.84],[19,3.84,4.24],[33,4.24,4.85],[39,4.98,5.34]],[[5,7.62,7.99],[9,8.21,8.39],[18,8.39,8.94],[21,8.94,9.12],[32,9.12,9.48],[36,9.48,9.66],[45,10.41,10.96],[49,10.96,11.23]]],   // 01
+    [[[4,0.18,0.38],[18,0.38,0.99],[31,1.65,2.18],[34,2.18,2.36],[40,2.36,2.71],[52,2.71,3.42],[61,3.42,3.95]],[[5,4.05,4.39],[17,4.39,5.43],[22,6.66,7.03],[27,7.03,7.4],[32,9.21,9.53],[39,9.53,10.16]]],   // 02
+    [[[3,0.18,0.39],[8,0.39,0.6],[14,0.72,1.37],[25,2.4,3.09]],[[4,5.13,5.36],[9,5.36,5.81],[15,5.81,6.27],[22,6.27,6.72],[26,7.35,7.54],[31,7.54,7.74],[39,7.88,8.5]]],   // 03
+    [[[5,0.18,0.36],[10,0.36,0.54],[14,0.54,0.73],[19,0.73,0.91],[24,1.02,1.25],[27,1.25,1.48],[33,2.17,2.61],[39,2.61,3.05],[43,3.05,3.27]],[[4,4.09,4.36],[8,4.36,4.62],[14,4.62,5.16],[19,5.16,5.42],[22,5.42,5.69],[28,5.69,6.22]],[[4,7.98,8.23],[11,8.23,8.72],[16,8.72,8.96],[19,8.96,9.21],[23,10.38,10.59],[26,10.59,10.79],[33,10.79,11.21]]],   // 04
+    [[[6,0.18,0.92],[10,0.92,1.29],[16,2.37,2.9]],[[3,3.39,3.63],[8,3.63,3.87],[13,5.42,5.69],[17,5.69,5.96],[22,5.96,6.23],[27,6.23,6.5],[34,6.6,7.07],[39,7.07,7.3]],[[5,9.31,9.68],[11,9.68,10.05],[14,10.05,10.42],[21,10.73,11.17],[25,11.31,11.65]],[[5,13.46,13.72],[16,13.72,14.25],[25,16.22,16.89],[29,17.67,17.87],[36,17.87,18.27]]],   // 05
+    [[[4,0.18,0.37],[9,0.37,0.57],[14,0.57,0.76],[23,0.97,1.47],[27,1.47,1.72],[31,1.72,1.97],[40,1.97,2.47],[48,2.47,2.72]],[[3,4.38,4.71],[10,4.71,5.03],[14,5.03,5.36],[21,6.15,6.68]]],   // 06
+    [[[5,0.18,0.43],[10,0.43,0.68],[14,1.8,2.06],[21,2.06,2.58],[27,3.07,3.65],[36,3.75,4.17],[43,4.17,4.46],[47,4.46,4.6]],[[4,6.22,6.49],[8,6.49,6.76],[13,6.76,7.03],[19,7.03,7.56],[24,7.56,7.83],[27,7.83,8.1],[34,8.1,8.64],[40,8.64,9.17],[45,9.17,9.44]]],   // 07
   ];
-  // how far a line is typed at time t. the words are shared out over her spoken stretches by their length,
-  // and every pause falls between two words (never inside one): "herzschlag" is typed whole, then the pause
-  // where we know better than the measurement: after which letter a pause falls (letter count, per recording and line).
-  // eröffnung, last line: "und" · pause · "eine ahnung von dir."
-  // brief 01, last line: "aber" · "ich versuche es trotzdem … und" · pause · "schreibe dir."
-  // brief 02: "wir verschwimmen;" · pause · "verschmelzen zu einem liebevollen gedanken." · pause ·
-  //   "sind gemeinsam –" · pause · "noch einsam."
-  const CUTS = { "0-3": [4], "1-2": [5, 36], "2-0": [18], "2-1": [17] };
-  const plan = (text, segs, fixed = []) => {
-    const len = text.length, all = segs.reduce((n, [s, e]) => n + e - s, 0) || 1;
-    const cuts = [0]; for (let i = 0; i < len; i++) if (text[i] === " ") cuts.push(i + 1); cuts.push(len);
-    let run = 0, from = 0;
-    return segs.map(([s, e], i) => {
-      run += e - s;
-      let to = len;
-      if (i < fixed.length) to = Math.max(from, Math.min(len, fixed[i]));
-      else if (i < segs.length - 1) {
-        const want = len * run / all;
-        to = cuts.reduce((b, c) => Math.abs(c - want) < Math.abs(b - want) ? c : b, from);
-        to = Math.max(from, to);
-      }
-      const seg = { s, e, from, to }; from = to; return seg;
-    });
-  };
-  const spokenShare = (l, segs, t) => {
-    const text = l._full ?? l.textContent;
-    l._plan ||= plan(text, segs, CUTS[speaking.id.slice(7) + "-" + speaking.lines.indexOf(l)]);
-    let k = 0;
-    for (const p of l._plan) { if (t >= p.s) k = p.from + (p.to - p.from) * clamp((t - p.s) / (p.e - p.s)); }
-    return text.length ? k / text.length : 1;
+  // how far a line is typed at time t (0 … 1)
+  const spokenShare = (l, words, t) => {
+    const len = (l._full ?? l.textContent).length;
+    let k = 0, from = 0;
+    for (const [to, s, e] of words) {
+      if (t >= e) k = to; else if (t > s) { k = from + (to - from) * (t - s) / (e - s); break; } else break;
+      from = to;
+    }
+    return len ? k / len : 1;
   };
   // typewriter: the typed part shows, the rest keeps its place invisibly (so nothing jumps while it types)
   const typeTo = (l, f) => {
@@ -118,7 +99,7 @@
   const speak = (n, el, lines) => {
     speaking?.lines.forEach(l => { l._ret = 1; typeTo(l, 1); });   // an interrupted letter keeps its whole text, silently
     // the text waits for the voice to really sound (the shell tells us); without sound it begins on its own after a moment
-    speaking = { id: "stille-" + n, el, lines, at: LINE_AT[n], spoken: SPOKEN[n], t0: performance.now() + (kosmos.inside ? 6000 : 250), heard: false };
+    speaking = { id: "stille-" + n, el, lines, at: LINE_AT[n], words: WORDS[n], t0: performance.now() + (kosmos.inside ? 6000 : 250), heard: false };
     kosmos.send({ voice: speaking.id });
   };
   // the shell says when the sound really starts (after loading): the text follows that moment
@@ -131,7 +112,7 @@
     if (!speaking) return;
     const t = (now - speaking.t0) / 1000;
     speaking.lines.forEach((l, i) => {
-      const [a, b] = speaking.at[i] || [0, 1], segs = speaking.spoken?.[i];
+      const [a, b] = speaking.at[i] || [0, 1], segs = speaking.words?.[i];
       if (t >= a) typeTo(l, segs ? spokenShare(l, segs, t) : (t - a) / (b - a));
     });
     const r = speaking.el.getBoundingClientRect();
