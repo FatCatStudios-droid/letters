@@ -115,7 +115,10 @@
       if (t >= a) typeTo(l, segs ? spokenShare(l, segs, t) : (t - a) / (b - a));
     });
     const r = speaking.el.getBoundingClientRect();
-    if (r.bottom < innerHeight * .1 || r.top > innerHeight * .9) {
+    // the opening gives way as soon as brief 1 is at least 76 % on screen
+    const f = letters[0].getBoundingClientRect();
+    const shownOf1 = (Math.min(f.bottom, innerHeight) - Math.max(f.top, 0)) / Math.min(f.height, innerHeight);
+    if (r.bottom < innerHeight * .1 || r.top > innerHeight * .9 || (speaking.el === opening && shownOf1 >= .76)) {
       // the letter has left the screen: the voice fades, its words stay
       kosmos.send({ voice: null });
       speaking.lines.forEach(l => { l._ret = 1; typeTo(l, 1); });
