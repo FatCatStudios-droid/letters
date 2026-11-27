@@ -2,12 +2,13 @@
 // Opened on its own, every call here simply does nothing.
 window.kosmos = (() => {
   const inside = window.parent !== window;
-  const listeners = [];
+  const listeners = [], leaving = [];
   let ton = false;
   addEventListener("message", e => {
     const d = e.data;
     if (!d || !d.kosmos || e.source !== window.parent) return;
     if ("ton" in d) { ton = !!d.ton; listeners.forEach(fn => fn(ton)); }
+    if (d.leave) leaving.forEach(fn => fn(+d.leave));     // the page is being left: its own sound fades out over d.leave ms
   });
   // every message names its page, so the shell can ignore a page that is just being left
   const page = location.pathname.split("/").pop().replace(/\.html$/, "");
@@ -18,6 +19,7 @@ window.kosmos = (() => {
     send,
     get ton() { return ton; },
     onTon(fn) { listeners.push(fn); fn(ton); },
+    onLeave(fn) { leaving.push(fn); },
   };
 })();
 

@@ -19,7 +19,8 @@
     if (!ctx) return;
     const now = ctx.currentTime;
     STEMS.forEach(s => gains[s]?.gain.setTargetAtTime(worldMix[s] ?? 0, now, .6));   // loops may still be loading
-    master.gain.setTargetAtTime(on && !duck ? level : 0, now, duck ? .15 : .5);
+    // switching the sound off (also leaving nähe) fades slowly, over about 4 seconds
+    master.gain.setTargetAtTime(on && !duck ? level : 0, now, duck ? .15 : on ? .5 : 1.3);
     sparkBus.gain.setTargetAtTime(on ? (duck ? .35 : 1) : 0, now, .3);
     if (scrub) scrub.out.gain.setTargetAtTime(on && here === "naehe" ? SCRUB_LEVEL * (duck ? .35 : 1) : 0, now, .3);
   };
@@ -249,7 +250,7 @@
     const h = heartCtx(); h.c.resume();
     const me = { n }; piano = me;
     let buf;
-    try { buf = await (pianoBufs[n] ||= fetch(`audio/piano-${n}.m4a?v=20261129e`).then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b))); }
+    try { buf = await (pianoBufs[n] ||= fetch(`audio/piano-${n}.m4a?v=20261129f`).then(r => r.arrayBuffer()).then(b => h.c.decodeAudioData(b))); }
     catch { if (piano === me) piano = null; return; }
     if (piano !== me) return;
     const src = h.c.createBufferSource(); src.buffer = buf; src.loop = true;
@@ -345,7 +346,7 @@
   requestAnimationFrame(meter);
 
   /* ---------- worlds talk to the shell ---------- */
-  const frame = document.getElementById("world");
+  let frame = document.getElementById("world");
   const tellWorld = () => frame.contentWindow?.postMessage({ kosmos: 1, ton: on }, "*");
   addEventListener("message", e => {
     const d = e.data; if (!d || !d.kosmos || e.source !== frame.contentWindow) return;
@@ -397,18 +398,34 @@
   /* ---------- routing: #home #naehe #stille load a page; #stueck … open the info sheet ---------- */
   let current = null, parked = false;     // parked: the page was put away while über / journal / kontakt is open
   // every visit to a tab starts its page fresh, with its own sound rules — whatever was open before
+  /* leaving a page: it is not cut off. the old page stays a few seconds, invisible and untouchable, while its own
+     sound fades out (home: voices, music); a fresh frame takes its place right away. */
+  const LEAVE = 4000;
+  const retire = () => {
+    const old = frame, src = old.getAttribute("src");
+    if (!src || src === "about:blank") return;
+    const next = old.cloneNode(false);
+    next.removeAttribute("src"); next.style.opacity = 0;
+    next.addEventListener("load", onLoad);
+    old.removeAttribute("id"); old.setAttribute("aria-hidden", "true"); old.tabIndex = -1;
+    old.style.cssText += ";visibility:hidden;pointer-events:none";
+    old.before(next); frame = next;
+    try { old.contentWindow?.postMessage({ kosmos: 1, leave: LEAVE }, "*"); } catch {}
+    setTimeout(() => old.remove(), LEAVE + 500);
+  };
   const open = (w, force) => {
     if (current === w && !force && !parked) return;
     current = w; parked = false; here = w.id; worldMix = w.mix; duck = false; level = 1;
+    retire();
     frame.style.transition = "none"; frame.style.opacity = 0;
-    frame.src = `welten/${w.file}.html?v=20261129e`;
+    frame.src = `welten/${w.file}.html?v=20261129f`;
     tabs.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.id === w.id));
     document.title = w.id === "home" ? "letters — eine ahnung von dir" : `letters — ${w.name}`;
     spark("kratzen");
     // sound is on by itself only in nähe; every other page starts silent
     if (w.ton) startTon(); else if (on || want) stopTon();
     // a voice never outlives its page, also when the same tab is tapped again and stille starts over
-    stopVoice(1); stopPiano();
+    stopVoice(3.5); stopPiano();
     // the heartbeat belongs to stille only: arriving starts its slow fade-in, leaving fades it out
     // arriving in stille (also tapping it again) brings the heartbeat back; letter 1 will let it go again
     if (w.heart) { const back = heartAway; heartAway = false; heartPage = true; if (back) heartWant = -1; setHeart(1); } else setHeart(0);
@@ -436,8 +453,8 @@
       panel.dataset.group = group;
       // über / journal / kontakt are quiet: the page underneath is put away (its films, voices and music stop),
       // the background sound, heartbeat and voice fade out. going back starts that page fresh
-      setHeart(0); stopVoice(); stopPiano(); if (on || want) stopTon();
-      if (!parked) { parked = true; frame.src = "about:blank"; }
+      setHeart(0); stopVoice(3.5); stopPiano(); if (on || want) stopTon();
+      if (!parked) { parked = true; retire(); }
       panel.querySelectorAll(".sheet").forEach(s => s.hidden = s.dataset.group !== group);
       requestAnimationFrame(() => {
         if (id === group) panel.scrollTop = 0;
@@ -451,11 +468,12 @@
     showTab();
     applyMix();
   };
-  frame.addEventListener("load", () => {
+  const onLoad = () => {
     tellWorld();
     // wait one frame so the page has painted, then let it fade in
     requestAnimationFrame(() => requestAnimationFrame(() => { frame.style.transition = ""; frame.style.opacity = 1; }));
-  });
+  };
+  frame.addEventListener("load", onLoad);
   addEventListener("hashchange", route);
   route();
   // for checking: what the cosmos is doing right now (sound, heartbeat, which page)

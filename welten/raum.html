@@ -95,7 +95,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   <button class="stopall" type="button" hidden>alles stoppen</button>
 </div>
 
-<script src="bridge.js?v=20261129e"></script>
+<script src="bridge.js?v=20261129f"></script>
 <script>
 (() => {
   const wide = innerWidth >= 700;
@@ -200,6 +200,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
     ramp(p.g, 0, ms); setTimeout(() => p.a.pause(), ms + 50);
     render();
   };
+  // leaving the page for another tab: everything still sounding fades out slowly instead of breaking off
+  kosmos.onLeave(ms => [...playing.keys()].forEach(c => stop(c, ms)));
   // klavier ends whatever music was playing; beat ends the klavier; beat and psalterium sound together
   const ENDS = { klavier: ["beat-a", "pad-a"], beat: ["klavier-1"] };
   const fresh = c => { const a = new Audio(`../audio/${c.src}.m4a?v=20261126`); a.preload = "auto"; return a; };
@@ -304,7 +306,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
     room.appendChild(b); c.el = b;
     if (c.kind === "dance") {
       const v = document.createElement("video");
-      v.className = "film"; v.src = `../video/${c.src}.mp4?v=20261129e`; v.muted = true; v.loop = true; v.playsInline = true; v.preload = "auto";
+      v.className = "film"; v.src = `../video/${c.src}.mp4?v=20261129f`; v.muted = true; v.loop = true; v.playsInline = true; v.preload = "auto";
       const [x, y, w, h] = c.at;
       Object.assign(v.style, { left: x + "%", top: y + "%", width: w + "%", height: h + "%" });
       room.insertBefore(v, room.querySelector(".title"));
