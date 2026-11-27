@@ -107,6 +107,8 @@
     // the moment the sound leaves the speakers: now, plus what the audio device still holds back
     if (d && d.kosmos && d.voiceStart && speaking && d.voiceStart === speaking.id) { speaking.t0 = performance.now() + 1000 * (+d.lat || 0); speaking.heard = true; }
   });
+  // how much of brief 1 is on screen (0 … 1)
+  const shownOf1 = () => { const f = letters[0].getBoundingClientRect(); return clamp((Math.min(f.bottom, innerHeight) - Math.max(f.top, 0)) / Math.min(f.height, innerHeight)); };
   const follow = now => {
     if (!speaking) return;
     const t = (now - speaking.t0) / 1000;
@@ -116,9 +118,7 @@
     });
     const r = speaking.el.getBoundingClientRect();
     // the opening gives way as soon as brief 1 is at least 76 % on screen
-    const f = letters[0].getBoundingClientRect();
-    const shownOf1 = (Math.min(f.bottom, innerHeight) - Math.max(f.top, 0)) / Math.min(f.height, innerHeight);
-    if (r.bottom < innerHeight * .1 || r.top > innerHeight * .9 || (speaking.el === opening && shownOf1 >= .76)) {
+    if (r.bottom < innerHeight * .1 || r.top > innerHeight * .9 || (speaking.el === opening && shownOf1() >= .76)) {
       // the letter has left the screen: the voice fades, its words stay
       kosmos.send({ voice: null });
       speaking.lines.forEach(l => { l._ret = 1; typeTo(l, 1); });
@@ -231,7 +231,7 @@
     hint.style.opacity = stillness > .97 || name.classList.contains("on") || scrollY > innerHeight * .25 ? 0 : 1;
 
     // while the two are still finding each other, dorothea begins: the first lines are typed with her voice
-    if (meetT >= 3 && stillness > .5 && shown === 0 && speaking?.el !== opening) {
+    if (meetT >= 3 && stillness > .5 && shown === 0 && !speaking && inView(opening) && shownOf1() < .76) {   // only while it is on screen and no letter speaks
       lineClock += dt;
       if (lineClock > .2) { speak(0, opening, firstLines); lineClock = 0; }
     }
