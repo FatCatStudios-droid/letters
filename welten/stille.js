@@ -250,7 +250,8 @@
       const r = b.getBoundingClientRect();
       if (r.top < innerHeight * .62 && r.bottom > 0) due = b;      // the lowest letter above the middle wins
     }
-    if (due && speaking?.el !== due && due.querySelector(".s:not(.on)") && idle() > .3)
+    // a letter that is still being read is never cut off: the next one waits until it has finished or left the screen
+    if (due && speaking?.el !== due && (!speaking || speaking.el === opening || (now - speaking.t0) / 1000 > speaking.at.at(-1)[1]) && due.querySelector(".s:not(.on)") && idle() > .3)
       speak(letters.indexOf(due) + 1, due, [...due.querySelectorAll(".s")]);
     // pictures between the letters simply appear when you pause
     if (still) {
